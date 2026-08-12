@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Dr. Muhammad Zaheer Anjum | Admin Dashboard
+    </title>
+
+
+    <!-- Google Font -->
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- Admin CSS -->
+
+    <link
+        rel="stylesheet"
+        href="admin.css"
+    > 
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         MOBILE SIDEBAR OVERLAY
+    ====================================================== -->
+
+    <div
+        class="sidebar-overlay"
+        id="sidebarOverlay"
+    ></div>
+
+
+
+    <!-- =====================================================
+         COMPLETE ADMIN APPLICATION
+    ====================================================== -->
+
+    <div class="admin-app">
+
+
+        <!-- =================================================
+             SIDEBAR
+        ================================================== -->
+
+        <aside
+            class="admin-sidebar"
+            id="adminSidebar"
+        >
+
+
+            <!-- =============================================
+                 SIDEBAR BRAND
+            ============================================== -->
+
+            <div class="sidebar-brand">
+
+
+                <div class="sidebar-logo">
+                    MZA
+                </div>
+
+
+                <div class="sidebar-brand-text">
+
+                    <h2>
+                        Dr. Muhammad Zaheer Anjum Clinic
+                    </h2>
+
+                    <p>
+                        Admin Dashboard
+                    </p>
+
+                </div>
+
+
+            </div>
+
+
+
+            <!-- =============================================
+                 SIDEBAR NAVIGATION
+            ============================================== -->
+
+            <nav class="sidebar-navigation">
+
+
+                <!-- MAIN -->
+
+                <div class="nav-section">
+
+                    <p class="nav-section-title">
+                        MAIN
+                    </p>
+
+
+                    <button
+                        class="nav-item active"
+                        type="button"
+                        data-page="overview"
+                    >
+
+                        <span class="nav-icon">
+                            ◫
+                        </span>
+
+                        <span>
+                            Overview
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="appointments"
+                    >
+
+                        <span class="nav-icon">
+                            📅
+                        </span>
+
+                        <span>
+                            Appointments
+                        </span>
+
+                        <span
+                            class="nav-count"
+                            id="appointmentNavCount"
+                        >
+                            0
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="calendar"
+                    >
+
+                        <span class="nav-icon">
+                            🗓
+                        </span>
+
+                        <span>
+                            Calendar
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="patients"
+                    >
+
+                        <span class="nav-icon">
+                            👥
+                        </span>
+
+                        <span>
+                            Patients
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+
+
+                <!-- DOCTOR & CLINICS -->
+
+                <div class="nav-section">
+
+                    <p class="nav-section-title">
+                        DOCTOR & CLINICS
+                    </p>
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="doctor-profile"
+                    >
+
+                        <span class="nav-icon">
+                            👨‍⚕️
+                        </span>
+
+                        <span>
+                            Doctor Profile
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="clinics"
+                    >
+
+                        <span class="nav-icon">
+                            🏥
+                        </span>
+
+                        <span>
+                            Clinics
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="weekly-schedule"
+                    >
+
+                        <span class="nav-icon">
+                            ⏱
+                        </span>
+
+                        <span>
+                            Weekly Schedule
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="off-days"
+                    >
+
+                        <span class="nav-icon">
+                            ⛔
+                        </span>
+
+                        <span>
+                            Off-Days
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="special-schedules"
+                    >
+
+                        <span class="nav-icon">
+                            ✨
+                        </span>
+
+                        <span>
+                            Special Schedules
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="blocked-slots"
+                    >
+
+                        <span class="nav-icon">
+                            🚫
+                        </span>
+
+                        <span>
+                            Blocked Slots
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+
+
+                <!-- PATIENT SERVICES -->
+
+                <div class="nav-section">
+
+                    <p class="nav-section-title">
+                        PATIENT SERVICES
+                    </p>
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="services"
+                    >
+
+                        <span class="nav-icon">
+                            🩺
+                        </span>
+
+                        <span>
+                            Services / Treatments
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="reports"
+                    >
+
+                        <span class="nav-icon">
+                            📄
+                        </span>
+
+                        <span>
+                            Uploaded Reports
+                        </span>
+
+                        <span
+                            class="nav-count"
+                            id="reportNavCount"
+                        >
+                            0
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="virtual-consultation"
+                    >
+
+                        <span class="nav-icon">
+                            💻
+                        </span>
+
+                        <span>
+                            Virtual Consultation
+                        </span>
+
+                    </button>
+
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="emergency-alerts"
+                    >
+
+                        <span class="nav-icon">
+                            ⚠
+                        </span>
+
+                        <span>
+                            Emergency Alerts
+                        </span>
+
+                        <span
+                            class="nav-count nav-count-danger"
+                            id="emergencyNavCount"
+                        >
+                            0
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+
+
+                <!-- COMMUNICATION -->
+
+                <div class="nav-section">
+
+                    <p class="nav-section-title">
+                        COMMUNICATION
+                    </p>
+
+
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="staff-inbox"
+                    >
+
+                        <span class="nav-icon">
+                            💬
+                        </span>
+
+                        <span>
+                            Staff Inbox
+                        </span>
+
+                        <span
+                            class="nav-count"
+                            id="inboxNavCount"
+                        >
+                            0
+                        </span>
+
+                    </button>
+
+
+                </div>
+
+
+            </nav>
+
+
+
+            <!-- =============================================
+                 SIDEBAR BOTTOM
+            ============================================== -->
+
+            <div class="sidebar-bottom">
+
+
+                <div class="admin-profile-mini">
+
+
+                    <div class="admin-profile-avatar">
+                        A
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            Clinic Admin
+                        </strong>
+
+                        <small>
+                            Administrator
+                        </small>
+
+                    </div>
+
+
+                </div>
+
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+
+                    <a
+                        href="../patient/index.html"
+                        class="patient-portal-link"
+                    >
+                        ← Patient Portal
+                    </a>
+
+                    <button
+                        class="logout-button"
+                        id="logoutButton"
+                        type="button"
+                    >
+                        Sign Out
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+        </aside>
+
+
+
+
+        <!-- =================================================
+             MAIN ADMIN AREA
+        ================================================== -->
+
+        <main class="admin-main">
+
+
+            <!-- =============================================
+                 TOP BAR
+            ============================================== -->
+
+            <header class="admin-topbar">
+
+
+                <div class="topbar-left">
+
+
+                    <button
+                        class="mobile-menu-button"
+                        id="mobileMenuButton"
+                        type="button"
+                    >
+                        ☰
+                    </button>
+
+
+                    <div>
+
+                        <h1 id="pageTitle">
+                            Clinic Overview
+                        </h1>
+
+                        <p id="pageSubtitle">
+                            Real-time clinic management dashboard
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <div class="topbar-actions">
+
+
+                    <button
+                        class="topbar-icon-button"
+                        type="button"
+                        id="refreshDashboardButton"
+                        title="Refresh Dashboard"
+                    >
+                        ↻
+                    </button>
+
+
+                    <button
+                        class="notification-button"
+                        type="button"
+                        id="notificationButton"
+                    >
+
+                        🔔
+
+                        <span
+                            class="notification-indicator"
+                            id="notificationIndicator"
+                        ></span>
+
+                    </button>
+
+
+                    <div class="topbar-admin">
+
+                        <div class="topbar-admin-avatar">
+                            A
+                        </div>
+
+                        <div class="topbar-admin-text">
+
+                            <strong>
+                                Clinic Admin
+                            </strong>
+
+                            <small>
+                                Staff Portal
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+            </header>
+
+
+
+
+            <!-- =================================================
+                 DYNAMIC ADMIN CONTENT
+            ================================================== -->
+
+            <div
+                class="admin-content"
+                id="adminContent"
+            >
+
+
+                <!-- =============================================
+                     OVERVIEW PAGE
+                ============================================== -->
+
+                <section
+                    class="admin-page active-page"
+                    id="overviewPage"
+                    data-admin-page="overview"
+                >
+
+
+                    <!-- PAGE HEADING -->
+
+                    <div class="page-heading">
+
+
+                        <div>
+
+                            <h2>
+                                Dr. Muhammad Zaheer Anjum Clinic Overview Dashboard
+                            </h2>
+
+                            <p>
+                                Real-time analytics and clinic performance indicators
+                            </p>
+
+                        </div>
+
+
+                        <div class="page-heading-actions">
+
+                            <span
+                                class="live-status"
+                                id="liveStatus"
+                            >
+
+                                <span class="live-status-dot"></span>
+
+                                Live
+
+                            </span>
+
+                        </div>
+
+
+                    </div>
+
+
+
+
+                    <!-- =========================================
+                         STATISTICS GRID
+                    ========================================== -->
+
+                    <section class="dashboard-statistics">
+
+
+                        <!-- Today's Appointments -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon green-icon">
+                                    📅
+                                </div>
+
+                                <span class="stat-label">
+                                    Today
+                                </span>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="todayAppointments"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Today's Appointments
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Confirmed -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon green-icon">
+                                    ✓
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="confirmedAppointments"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Confirmed
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Completed -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon purple-icon">
+                                    ✓
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="completedAppointments"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Completed
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Cancelled -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon red-icon">
+                                    ×
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="cancelledAppointments"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Cancelled
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- No-Shows -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon orange-icon">
+                                    !
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="noShowAppointments"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                No-Shows
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Available Slots -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon blue-icon">
+                                    ◷
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="availableSlots"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Available Slots Today
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Blocked Slots -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon red-icon">
+                                    🚫
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="blockedSlots"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Blocked Slots
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Doctor Leave -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon orange-icon">
+                                    🗓
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="doctorLeave"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Upcoming Doctor Leave
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Pending Consultations -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon purple-icon">
+                                    💻
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="pendingConsultations"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Pending Consultations
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Human Handovers -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon blue-icon">
+                                    💬
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="humanHandovers"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Human Handovers
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Emergency Alerts -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon red-icon">
+                                    ⚠
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="pendingEmergencyAlerts"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Pending Emergency Alerts
+                            </p>
+
+                        </article>
+
+
+
+                        <!-- Reports -->
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+
+                                <div class="stat-icon orange-icon">
+                                    📄
+                                </div>
+
+                            </div>
+
+
+                            <strong
+                                class="stat-number"
+                                id="pendingReports"
+                            >
+                                0
+                            </strong>
+
+
+                            <p>
+                                Uploaded Reports Pending Review
+                            </p>
+
+                        </article>
+
+
+                    </section>
+
+
+
+
+                    <!-- =========================================
+                         INTEGRATION STATUS
+                    ========================================== -->
+
+                    <section class="dashboard-panel">
+
+
+                        <div class="panel-header">
+
+                            <div>
+
+                                <h3>
+                                    Integration Status
+                                </h3>
+
+                                <p>
+                                    System services and connection status
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="integration-status-grid">
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    Database
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="databaseStatus"
+                                >
+                                    CONNECTED
+                                </span>
+
+                            </div>
+
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    WhatsApp
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="whatsappStatus"
+                                >
+                                    SIMULATION ACTIVE
+                                </span>
+
+                            </div>
+
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    Appointment API
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="appointmentApiStatus"
+                                >
+                                    CONNECTED
+                                </span>
+
+                            </div>
+
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    Reminder System
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="reminderStatus"
+                                >
+                                    ENABLED
+                                </span>
+
+                            </div>
+
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    File Storage
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="fileStorageStatus"
+                                >
+                                    CONNECTED
+                                </span>
+
+                            </div>
+
+
+
+                            <div class="integration-item">
+
+                                <span class="integration-name">
+                                    AI Assistant
+                                </span>
+
+                                <span
+                                    class="integration-badge connected"
+                                    id="aiStatus"
+                                >
+                                    ACTIVE
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+
+                    </section>
+
+
+
+
+                    <!-- =========================================
+                         RECENT APPOINTMENTS
+                    ========================================== -->
+
+                    <section class="dashboard-panel">
+
+
+                        <div class="panel-header">
+
+
+                            <div>
+
+                                <h3>
+                                    Recent Appointments
+                                </h3>
+
+                                <p>
+                                    Latest patient appointment records
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                class="panel-action-button"
+                                type="button"
+                                data-open-page="appointments"
+                            >
+                                View All
+                            </button>
+
+
+                        </div>
+
+
+
+                        <div class="table-wrapper">
+
+
+                            <table class="admin-table">
+
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>
+                                            Token
+                                        </th>
+
+                                        <th>
+                                            Appointment ID
+                                        </th>
+
+                                        <th>
+                                            Patient
+                                        </th>
+
+                                        <th>
+                                            Phone
+                                        </th>
+
+                                        <th>
+                                            Type
+                                        </th>
+
+                                        <th>
+                                            Date & Time
+                                        </th>
+
+                                        <th>
+                                            Clinic
+                                        </th>
+
+                                        <th>
+                                            Status
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+
+
+                                <tbody id="recentAppointmentsTable">
+
+
+                                    <tr class="empty-table-row">
+
+                                        <td colspan="8">
+
+                                            <div class="empty-state">
+
+                                                <div class="empty-state-icon">
+                                                    📅
+                                                </div>
+
+                                                <strong>
+                                                    No appointments yet
+                                                </strong>
+
+                                                <p>
+                                                    New appointments will appear here automatically.
+                                                </p>
+
+                                            </div>
+
+                                        </td>
+
+                                    </tr>
+
+
+                                </tbody>
+
+
+                            </table>
+
+
+                        </div>
+
+
+                    </section>
+
+
+                </section>
+
+
+
+
+                <!-- =============================================
+                     OTHER ADMIN PAGES WILL BE INJECTED HERE
+                     USING admin.js
+                ============================================== -->
+
+                <section
+                    class="admin-page"
+                    id="dynamicAdminPage"
+                >
+                </section>
+
+
+            </div>
+
+
+        </main>
+
+
+    </div>
+
+
+
+
+    <!-- =====================================================
+         ADMIN JAVASCRIPT
+    ====================================================== -->
+
+    <script src="admin.js"></script>
+
+
+</body>
+
+</html>

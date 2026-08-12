@@ -1,0 +1,1596 @@
+/* =========================================================
+   DR. MUHAMMAD ZAHEER ANJUM
+   AI CLINIC ASSISTANT
+   MAIN FRONTEND DESIGN
+========================================================= */
+
+
+/* =========================================================
+   1. COLOR VARIABLES
+========================================================= */
+
+:root {
+
+    --bg-dark: #071A3D;
+    --bg-dark-2: #0B2452;
+    --bg-dark-3: #051430;
+
+    --primary: #2457E6;
+    --primary-dark: #1D4ED8;
+    --primary-hover: #1D4ED8;
+    --primary-bright: #3B6FF5;
+
+    --primary-light: #EAF0FF;
+    --mint-light: #EAF0FF;
+
+    --chat-bg: #F7F9FD;
+    --white: #FFFFFF;
+
+    --text-dark: #12233F;
+    --text-normal: #2C3E5A;
+    --text-muted: #6B7A90;
+    --text-light: #AFC1E8;
+
+    --border: #D9E2F2;
+    --border-dark: rgba(255, 255, 255, 0.10);
+
+    --success: #22B573;
+    --danger: #D85C5C;
+
+    --radius-small: 10px;
+    --radius-card: 15px;
+    --radius-chat: 25px;
+
+    --chat-width: 385px;
+}
+
+
+/* =========================================================
+   2. RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+html {
+    width: 100%;
+    height: 100%;
+}
+
+
+body {
+    width: 100%;
+    min-height: 100vh;
+
+    font-family: "Inter", sans-serif;
+
+    background: var(--bg-dark);
+
+    color: var(--text-dark);
+
+    overflow: hidden;
+}
+
+
+button,
+input {
+    font-family: inherit;
+}
+
+
+button {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   3. MAIN PORTAL
+========================================================= */
+
+.clinic-portal {
+
+    width: 100%;
+    height: 100vh;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        var(--chat-width);
+
+    gap: 22px;
+
+    padding: 18px;
+
+    background:
+
+        radial-gradient(
+            circle at 25% 40%,
+            rgba(59, 111, 245, 0.08),
+            transparent 35%
+        ),
+
+        linear-gradient(
+            120deg,
+            #0B2452 0%,
+            #071A3D 55%,
+            #051430 100%
+        );
+}
+
+
+/* =========================================================
+   4. LEFT CLINIC AREA
+========================================================= */
+
+.clinic-left {
+
+    min-width: 0;
+    height: calc(100vh - 36px);
+
+    display: flex;
+    flex-direction: column;
+
+    position: relative;
+
+    padding: 20px 24px;
+}
+
+
+/* =========================================================
+   5. DOCTOR TOP INFORMATION
+========================================================= */
+
+.doctor-top {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+
+.doctor-logo {
+
+    width: 44px;
+    height: 44px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: var(--primary);
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
+
+    box-shadow:
+        0 5px 18px
+        rgba(36, 87, 230, 0.30);
+}
+
+
+.doctor-top-content h3 {
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    margin-bottom: 3px;
+}
+
+
+.doctor-top-content p {
+
+    color: #AFC1E8;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   6. HERO SECTION
+========================================================= */
+
+.hero-section {
+
+    margin-top: 110px;
+
+    max-width: 760px;
+}
+
+
+.assistant-label {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 7px 13px;
+
+    border-radius: 40px;
+
+    border:
+        1px solid
+        rgba(59, 111, 245, 0.55);
+
+    background:
+        rgba(59, 111, 245, 0.12);
+
+    color: #8FAEFF;
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    letter-spacing: 0.5px;
+
+    margin-bottom: 20px;
+}
+
+
+.hero-section h1 {
+
+    max-width: 750px;
+
+    color: white;
+
+    font-size:
+        clamp(
+            32px,
+            3.3vw,
+            50px
+        );
+
+    font-weight: 700;
+
+    line-height: 1.12;
+
+    letter-spacing: -1px;
+
+    margin-bottom: 14px;
+}
+
+
+.hero-section p {
+
+    color: #AFC1E8;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   7. BOTTOM LEFT AREA
+========================================================= */
+
+.left-bottom {
+
+    margin-top: auto;
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   8. CLINIC INFO CARD
+========================================================= */
+
+.clinic-info-card {
+
+    width: 100%;
+
+    min-height: 74px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 14px 16px;
+
+    border-radius: 13px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+}
+
+
+.clinic-status {
+
+    width: 9px;
+    height: 9px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #22B573;
+
+    box-shadow:
+        0 0 10px
+        rgba(34, 181, 115, 0.75);
+}
+
+
+.clinic-info-content h4 {
+
+    color: white;
+
+    font-size: 12px;
+
+    margin-bottom: 4px;
+}
+
+
+.clinic-info-content p {
+
+    color: #AFC1E8;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   9. STAFF DASHBOARD CARD
+========================================================= */
+
+.staff-dashboard-card {
+
+    width: 100%;
+
+    min-height: 50px;
+
+    margin-top: 13px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 16px;
+
+    border-radius: 12px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+
+.staff-dashboard-card:hover {
+
+    background:
+        rgba(59, 111, 245, 0.10);
+
+    border-color:
+        rgba(59, 111, 245, 0.55);
+}
+
+
+/* =========================================================
+   10. RIGHT CHATBOT AREA
+========================================================= */
+
+.chatbot-area {
+
+    width: 100%;
+
+    height: calc(100vh - 36px);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+
+/* =========================================================
+   11. CHATBOT CONTAINER
+========================================================= */
+
+.chatbot-container {
+
+    width: 100%;
+
+    height: 100%;
+
+    max-height: 830px;
+
+    min-height: 590px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    overflow: hidden;
+
+    border-radius:
+        var(--radius-chat);
+
+    background:
+        var(--chat-bg);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.15);
+
+    box-shadow:
+        0 18px 45px
+        rgba(0, 0, 0, 0.20);
+}
+
+
+/* =========================================================
+   12. CHATBOT HEADER
+========================================================= */
+
+.chatbot-header {
+
+    min-height: 66px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    padding: 10px 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #1D4ED8,
+            #2457E6
+        );
+
+    color: white;
+}
+
+
+.chat-doctor {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    min-width: 0;
+}
+
+
+.chat-doctor-avatar {
+
+    width: 37px;
+    height: 37px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 255, 255, 0.18);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.18);
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 700;
+}
+
+
+.chat-doctor-details {
+
+    min-width: 0;
+}
+
+
+.chat-doctor-details h4 {
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    margin-bottom: 3px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.chat-doctor-details p {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    color: #DBE6FE;
+
+    font-size: 8px;
+}
+
+
+.online-status {
+
+    width: 6px;
+    height: 6px;
+
+    display: inline-block;
+
+    border-radius: 50%;
+
+    background: #22B573;
+}
+
+
+/* =========================================================
+   13. LANGUAGE BUTTON
+========================================================= */
+
+.language-button {
+
+    flex-shrink: 0;
+
+    border: none;
+
+    padding: 6px 9px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255, 255, 255, 0.13);
+
+    color: white;
+
+    font-size: 9px;
+
+    transition: 0.2s ease;
+}
+
+
+.language-button:hover {
+
+    background:
+        rgba(255, 255, 255, 0.22);
+}
+
+
+/* =========================================================
+   14. SECURITY BAR
+========================================================= */
+
+.security-bar {
+
+    min-height: 25px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 4px 8px;
+
+    border-bottom:
+        1px solid
+        #DCE5F5;
+
+    background: #EEF3FF;
+
+    color: #526B9D;
+
+    font-size: 7.5px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   15. CHAT CONTENT
+========================================================= */
+
+.chat-content {
+
+    flex: 1;
+
+    overflow-y: auto;
+
+    overflow-x: hidden;
+
+    padding: 12px;
+
+    scroll-behavior: smooth;
+}
+
+
+.chat-content::-webkit-scrollbar {
+
+    width: 4px;
+}
+
+
+.chat-content::-webkit-scrollbar-track {
+
+    background: transparent;
+}
+
+
+.chat-content::-webkit-scrollbar-thumb {
+
+    background: #C8D8D3;
+
+    border-radius: 20px;
+}
+
+
+/* =========================================================
+   16. STANDARD CHAT CARD
+========================================================= */
+
+.chat-card {
+
+    width: 100%;
+
+    padding: 13px;
+
+    margin-bottom: 10px;
+
+    background: white;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        var(--radius-card);
+
+    box-shadow:
+        0 2px 7px
+        rgba(16, 43, 36, 0.035);
+}
+
+
+.chat-card h4 {
+
+    color: var(--text-dark);
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    margin-bottom: 7px;
+
+    line-height: 1.4;
+}
+
+
+.chat-card p {
+
+    color: var(--text-muted);
+
+    font-size: 9px;
+
+    line-height: 1.5;
+
+    margin-bottom: 4px;
+}
+
+
+/* =========================================================
+   17. CHAT CARD HEADING
+========================================================= */
+
+.chat-card-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--primary);
+
+    font-size: 10px;
+
+    margin-bottom: 9px;
+}
+
+
+/* =========================================================
+   18. LOCATION ACTIONS
+========================================================= */
+
+.two-buttons {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 7px;
+
+    margin-top: 10px;
+}
+
+
+.small-action-button {
+
+    min-height: 34px;
+
+    border-radius:
+        var(--radius-small);
+
+    border:
+        1px solid
+        #AFC4F8;
+
+    background: white;
+
+    color: #1D4ED8;
+
+    font-size: 8px;
+
+    font-weight: 600;
+
+    transition: 0.2s ease;
+}
+
+
+.small-action-button:hover {
+
+    background:
+        #F1F5FF;
+
+    border-color:
+        #3B6FF5;
+}
+
+
+/* =========================================================
+   19. LANGUAGE / CHAT OPTIONS
+========================================================= */
+
+.chat-option {
+
+    width: 100%;
+
+    min-height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 12px;
+
+    margin-top: 7px;
+
+    border-radius:
+        var(--radius-small);
+
+    border:
+        1px solid
+        #AFC4F8;
+
+    background: white;
+
+    color:
+        #1D4ED8;
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    text-align: left;
+
+    transition: 0.2s ease;
+}
+
+
+.chat-option:hover {
+
+    background:
+        #F1F5FF;
+
+    border-color:
+        #3B6FF5;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* =========================================================
+   20. SERVICE MENU OPTIONS
+========================================================= */
+
+.service-option {
+
+    width: 100%;
+
+    min-height: 54px;
+
+    display: grid;
+
+    grid-template-columns:
+        38px 1fr 16px;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 10px 12px;
+
+    margin-top: 8px;
+
+    border-radius: 12px;
+
+    border:
+        1px solid
+        var(--border);
+
+    background: white;
+
+    color: var(--text-dark);
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+.service-option:hover {
+
+    border-color:
+        #3B6FF5;
+
+    background:
+        #F5F8FF;
+
+    transform:
+        translateX(2px);
+}
+
+
+/* =========================================================
+   21. SERVICE ICON
+========================================================= */
+
+.service-icon {
+
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background:
+        #EAF0FF;
+
+    color:
+        #1D4ED8;
+
+    font-size: 16px;
+
+    flex-shrink: 0;
+}
+
+
+/* =========================================================
+   22. SERVICE TEXT
+========================================================= */
+
+.service-text {
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    gap: 2px;
+}
+
+
+.service-text strong {
+
+    color:
+        var(--text-dark);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.service-text small {
+
+    color:
+        var(--text-muted);
+
+    font-size: 10.5px;
+
+    font-weight: 400;
+
+    line-height: 1.35;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.service-arrow {
+
+    color: #3B6FF5;
+
+    font-size: 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+
+/* =========================================================
+   23. DYNAMIC CONTENT
+========================================================= */
+
+.dynamic-content {
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   24. USER MESSAGE
+========================================================= */
+
+.user-message {
+
+    width: fit-content;
+
+    max-width: 82%;
+
+    margin:
+        7px 0
+        7px auto;
+
+    padding:
+        9px 11px;
+
+    background:
+        #EAF0FF;
+
+    color:
+        #173A8A;
+
+    border-radius:
+        14px
+        14px
+        4px
+        14px;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   25. BOT MESSAGE
+========================================================= */
+
+.bot-message {
+
+    width: fit-content;
+
+    max-width: 88%;
+
+    margin:
+        7px auto
+        7px 0;
+
+    padding:
+        9px 11px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        14px
+        14px
+        14px
+        4px;
+
+    background: white;
+
+    color:
+        var(--text-dark);
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   26. CHAT INPUT AREA
+========================================================= */
+
+.chat-input-area {
+
+    min-height: 59px;
+
+    flex-shrink: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        30px 1fr 38px;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding:
+        8px 11px;
+
+    background: white;
+
+    border-top:
+        1px solid
+        var(--border);
+}
+
+
+/* =========================================================
+   27. ATTACH BUTTON
+========================================================= */
+
+.attach-button {
+
+    width: 30px;
+    height: 38px;
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 15px;
+
+    color:
+        var(--text-muted);
+}
+
+
+/* =========================================================
+   28. MESSAGE INPUT
+========================================================= */
+
+.chat-input-area input {
+
+    width: 100%;
+
+    min-width: 0;
+
+    height: 39px;
+
+    padding:
+        0 13px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius: 24px;
+
+    background:
+        #FAFCFB;
+
+    color:
+        var(--text-dark);
+
+    outline: none;
+
+    font-size: 9px;
+
+    transition: 0.2s ease;
+}
+
+
+.chat-input-area input:focus {
+
+    border-color:
+        #3B6FF5;
+
+    background: white;
+}
+
+
+.chat-input-area input::placeholder {
+
+    color:
+        #9BACA7;
+}
+
+
+/* =========================================================
+   29. SEND BUTTON
+========================================================= */
+
+.send-button {
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background:
+        #2457E6;
+
+    color: white;
+
+    font-size: 12px;
+
+    box-shadow:
+        0 4px 12px
+        rgba(36, 87, 230, 0.25);
+
+    transition: 0.2s ease;
+}
+
+
+.send-button:hover {
+
+    background:
+        #1D4ED8;
+
+    transform:
+        scale(1.04);
+}
+
+
+/* =========================================================
+   30. GENERAL ACTION BUTTON
+========================================================= */
+
+.primary-action {
+
+    width: 100%;
+
+    min-height: 43px;
+
+    border: none;
+
+    border-radius:
+        var(--radius-small);
+
+    background:
+        var(--primary);
+
+    color: white;
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    transition: 0.2s ease;
+}
+
+
+.primary-action:hover {
+
+    background:
+        var(--primary-hover);
+}
+
+
+/* =========================================================
+   31. FORM ELEMENTS FOR FUTURE CHAT STEPS
+========================================================= */
+
+.chat-form {
+
+    width: 100%;
+}
+
+
+.chat-form label {
+
+    display: block;
+
+    color:
+        var(--text-dark);
+
+    font-size: 8px;
+
+    font-weight: 600;
+
+    margin:
+        10px 0 5px;
+}
+
+
+.chat-form input,
+.chat-form textarea,
+.chat-form select {
+
+    width: 100%;
+
+    min-height: 39px;
+
+    padding:
+        9px 10px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius:
+        var(--radius-small);
+
+    background: white;
+
+    color:
+        var(--text-dark);
+
+    outline: none;
+
+    font-size: 9px;
+}
+
+
+.chat-form textarea {
+
+    min-height: 75px;
+
+    resize: vertical;
+}
+
+
+.chat-form input:focus,
+.chat-form textarea:focus,
+.chat-form select:focus {
+
+    border-color:
+        var(--primary);
+}
+
+
+/* =========================================================
+   32. SUCCESS CARD
+========================================================= */
+
+.success-card {
+
+    border-color:
+        #B8E1D3;
+
+    background:
+        #F4FCF9;
+}
+
+
+.success-card h4 {
+
+    color:
+        #14795E;
+}
+
+
+/* =========================================================
+   33. TOAST
+========================================================= */
+
+.toast {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 20px;
+
+    transform:
+        translateX(-50%);
+
+    z-index: 9999;
+
+    min-width: 280px;
+
+    max-width: 90%;
+
+    padding:
+        13px 18px;
+
+    border-radius: 11px;
+
+    background:
+        #152C26;
+
+    color: white;
+
+    font-size: 9px;
+
+    text-align: center;
+
+    box-shadow:
+        0 12px 30px
+        rgba(0, 0, 0, 0.24);
+}
+
+
+/* =========================================================
+   34. HIDDEN UTILITY
+========================================================= */
+
+.hidden {
+
+    display: none !important;
+}
+
+
+/* =========================================================
+   35. TABLET
+========================================================= */
+
+@media (max-width: 1050px) {
+
+    :root {
+
+        --chat-width: 360px;
+    }
+
+
+    .clinic-portal {
+
+        gap: 14px;
+
+        padding: 14px;
+    }
+
+
+    .clinic-left,
+    .chatbot-area {
+
+        height:
+            calc(100vh - 28px);
+    }
+
+
+    .hero-section {
+
+        margin-top: 80px;
+    }
+
+
+    .hero-section h1 {
+
+        font-size:
+            clamp(
+                29px,
+                4vw,
+                42px
+            );
+    }
+
+}
+
+
+/* =========================================================
+   36. MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+
+
+    body {
+
+        overflow: hidden;
+    }
+
+
+    .clinic-portal {
+
+        width: 100%;
+
+        height: 100dvh;
+
+        display: block;
+
+        padding: 0;
+
+        background:
+            var(--chat-bg);
+    }
+
+
+    /* Hide presentation area on mobile */
+
+    .clinic-left {
+
+        display: none;
+    }
+
+
+    .chatbot-area {
+
+        width: 100%;
+
+        height: 100dvh;
+    }
+
+
+    .chatbot-container {
+
+        width: 100%;
+
+        height: 100dvh;
+
+        min-height: 100dvh;
+
+        max-height: none;
+
+        border: none;
+
+        border-radius: 0;
+
+        box-shadow: none;
+    }
+
+}
+
+
+/* =========================================================
+   37. SMALL MOBILE
+========================================================= */
+
+@media (max-width: 420px) {
+
+
+    .chatbot-header {
+
+        padding:
+            9px 10px;
+    }
+
+
+    .chat-doctor-avatar {
+
+        width: 34px;
+        height: 34px;
+    }
+
+
+    .chat-doctor-details h4 {
+
+        font-size: 10px;
+    }
+
+
+    .language-button {
+
+        padding:
+            5px 7px;
+
+        font-size: 8px;
+    }
+
+
+    .chat-content {
+
+        padding: 9px;
+    }
+
+
+    .chat-card {
+
+        padding: 11px;
+    }
+
+
+    .service-option {
+
+        min-height: 53px;
+    }
+
+} 

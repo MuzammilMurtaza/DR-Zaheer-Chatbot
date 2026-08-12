@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Login - Dr. Muhammad Zaheer Anjum Clinic Assistant</title>
+    <link rel="stylesheet" href="login.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="login-logo">MZA</div>
+                <h2>Dr. Muhammad Zaheer Anjum Clinic</h2>
+                <p class="login-subtitle">Secure Staff & Clinic Dashboard</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email / Username</label>
+                    <input 
+                        type="text" 
+                        id="email" 
+                        class="form-input" 
+                        placeholder="admin@mza-clinic.com" 
+                        required 
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            class="form-input" 
+                            placeholder="••••••••" 
+                            required 
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="signInButton">
+                    Sign In to Dashboard
+                </button>
+
+                <div class="login-error hidden" id="loginError">
+                    Invalid email or password.
+                </div>
+            </form>
+
+            <div class="login-footer">
+                <a href="../patient/index.html" class="back-link">
+                    ← Back to Patient Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

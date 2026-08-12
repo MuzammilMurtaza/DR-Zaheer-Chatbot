@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Dr. Muhammad Zaheer Anjum | AI Clinic Assistant
+    </title>
+
+
+    <!-- Google Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <!-- Main CSS File -->
+    <!-- style.css is in the SAME folder as index.html -->
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         MAIN PATIENT PORTAL
+    ====================================================== -->
+
+    <main class="clinic-portal">
+
+
+
+        <!-- =================================================
+             LEFT SIDE
+             CLINIC PRESENTATION AREA
+        ================================================== -->
+
+        <section class="clinic-left">
+
+
+            <!-- =============================================
+                 TOP DOCTOR INFORMATION
+            ============================================== -->
+
+            <header class="doctor-top">
+
+
+                <div class="doctor-logo">
+                    MZA
+                </div>
+
+
+                <div class="doctor-top-content">
+
+                    <h3>
+                        Dr. Muhammad Zaheer Anjum
+                    </h3>
+
+                    <p>
+                        Pain Management & Regenerative Medicine Specialist
+                    </p>
+
+                </div>
+
+
+            </header>
+
+
+
+            <!-- =============================================
+                 HERO
+            ============================================== -->
+
+            <section class="hero-section">
+
+
+                <div class="assistant-label">
+                    OFFICIAL AI ASSISTANT
+                </div>
+
+
+                <h1>
+                    Dr. Muhammad Zaheer Anjum Clinic Assistant
+                </h1>
+
+
+                <p>
+                    Bilingual AI Assistant & Appointment Management Portal
+                </p>
+
+
+            </section>
+
+
+
+            <!-- =============================================
+                 BOTTOM LEFT INFORMATION
+            ============================================== -->
+
+            <section class="left-bottom">
+
+
+
+                <!-- Clinic Information -->
+
+                <div class="clinic-info-card">
+
+
+                    <span class="clinic-status"></span>
+
+
+                    <div class="clinic-info-content">
+
+                        <h4>
+                            Stay Young Clinic, Lahore
+                        </h4>
+
+                        <p>
+                            684 Shadman Main Road, Shadman 1,
+                            opposite Fatima Memorial Hospital, Lahore
+                        </p>
+
+                        <p>
+                            Monday – Saturday | 12:00 PM – 7:30 PM
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- Staff Dashboard Button -->
+
+                <a
+                    href="../admin/login.html"
+                    class="staff-dashboard-card"
+                    id="staffDashboardButton"
+                >
+
+                    <span>
+                        🔐 Staff & Clinic Dashboard
+                    </span>
+
+                    <span>
+                        →
+                    </span>
+
+                </a>
+
+
+            </section>
+
+
+        </section>
+
+
+
+
+        <!-- =================================================
+             RIGHT SIDE CHATBOT
+        ================================================== -->
+
+        <aside class="chatbot-area">
+
+
+            <section class="chatbot-container">
+
+
+
+                <!-- =========================================
+                     CHATBOT HEADER
+                ========================================== -->
+
+                <header class="chatbot-header">
+
+
+                    <div class="chat-doctor">
+
+
+                        <div class="chat-doctor-avatar">
+                            MZA
+                        </div>
+
+
+                        <div class="chat-doctor-details">
+
+                            <h4>
+                                Dr. Muhammad Zaheer Anjum
+                            </h4>
+
+                            <p>
+
+                                <span class="online-status"></span>
+
+                                AI Appointment Assistant
+
+                            </p>
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <button
+                        class="language-button"
+                        id="languageButton"
+                        type="button"
+                    >
+                        🌐 اردو
+                    </button>
+
+
+                </header>
+
+
+
+
+                <!-- =========================================
+                     SECURITY NOTICE
+                ========================================== -->
+
+                <div class="security-bar">
+
+                    🔐 End-to-End Encrypted Appointment
+                    & Consultation Portal
+
+                </div>
+
+
+
+
+                <!-- =========================================
+                     SCROLLABLE CHAT CONTENT
+                ========================================== -->
+
+                <section
+                    class="chat-content"
+                    id="chatContent"
+                >
+
+
+
+                    <!-- =====================================
+                         CLINIC LOCATION CARD
+                    ====================================== -->
+
+                    <article class="chat-card location-card">
+
+
+                        <div class="chat-card-heading">
+
+                            <span>
+                                📍
+                            </span>
+
+                            <strong>
+                                Clinic Location
+                            </strong>
+
+                        </div>
+
+
+                        <h4>
+                            Stay Young Clinic
+                        </h4>
+
+
+                        <p>
+                            684 Shadman Main Road,
+                            Shadman 1,
+                            opposite Fatima Memorial Hospital,
+                            Lahore
+                        </p>
+
+
+                        <p>
+                            Monday to Saturday
+                        </p>
+
+
+                        <p>
+                            12:00 PM – 7:30 PM
+                        </p>
+
+
+                        <div class="two-buttons">
+
+
+                            <button
+                                class="small-action-button"
+                                type="button"
+                                id="directionsButton"
+                            >
+                                📍 Directions
+                            </button>
+
+
+                            <button
+                                class="small-action-button"
+                                type="button"
+                                id="callClinicButton"
+                            >
+                                📞 Call Clinic
+                            </button>
+
+
+                        </div>
+
+
+                    </article>
+
+
+
+
+                    <!-- =====================================
+                         WELCOME CARD
+                    ====================================== -->
+
+                    <article
+                        class="chat-card"
+                        id="welcomeCard"
+                    >
+
+
+                        <h4>
+                            Assalam-o-Alaikum 👋
+                        </h4>
+
+
+                        <p>
+                            Welcome to Dr. Muhammad Zaheer Anjum's
+                            Appointment Assistant.
+                        </p>
+
+
+                        <p>
+                            Please select your preferred language.
+                        </p>
+
+
+
+                        <button
+                            class="chat-option"
+                            type="button"
+                            data-language="english"
+                        >
+                            English
+                        </button>
+
+
+                        <button
+                            class="chat-option"
+                            type="button"
+                            data-language="urdu"
+                        >
+                            اردو
+                        </button>
+
+
+                    </article>
+
+
+
+
+                    <!-- =====================================
+                         MAIN MENU
+                         INITIALLY HIDDEN
+                    ====================================== -->
+
+                    <article
+                        class="chat-card hidden"
+                        id="mainMenu"
+                    >
+
+
+                        <h4>
+                            How may I help you today?
+                        </h4>
+
+
+
+
+                        <!-- Book Appointment -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="bookAppointment"
+                        >
+
+
+                            <span class="service-icon">
+                                📅
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Book Appointment
+                                </strong>
+
+                                <small>
+                                    Stay Young Clinic, Lahore
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Manage Appointment -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="manageAppointment"
+                        >
+
+
+                            <span class="service-icon">
+                                🗓️
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Manage Appointment
+                                </strong>
+
+                                <small>
+                                    View / Reschedule / Cancel
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Clinic Information -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="clinicInformation"
+                        >
+
+
+                            <span class="service-icon">
+                                🏥
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Clinic Information
+                                </strong>
+
+                                <small>
+                                    Lahore location, schedule & contact
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Treatment Information -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="treatmentInformation"
+                        >
+
+
+                            <span class="service-icon">
+                                🩺
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Treatment Information
+                                </strong>
+
+                                <small>
+                                    Pain, regenerative medicine,
+                                    wellness & aesthetics
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Doctor Profile -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="doctorProfile"
+                        >
+
+
+                            <span class="service-icon">
+                                👨‍⚕️
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Doctor Profile
+                                </strong>
+
+                                <small>
+                                    Consultation information
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Online Consultation -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="onlineConsultation"
+                        >
+
+
+                            <span class="service-icon">
+                                💻
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Online Consultation
+                                </strong>
+
+                                <small>
+                                    Virtual clinic request
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Upload Reports -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="uploadReports"
+                        >
+
+
+                            <span class="service-icon">
+                                📎
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Upload Reports
+                                </strong>
+
+                                <small>
+                                    MRI / X-Ray / Prescriptions
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Speak to Staff -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="speakToStaff"
+                        >
+
+
+                            <span class="service-icon">
+                                🎧
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Speak to Staff
+                                </strong>
+
+                                <small>
+                                    Human assistant takeover
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+                    </article>
+
+
+
+
+                    <!-- =====================================
+                         DYNAMIC CHAT AREA
+
+                         JavaScript will inject:
+                         booking cards,
+                         appointment cards,
+                         report upload,
+                         profile,
+                         treatment info etc.
+                    ====================================== -->
+
+                    <div
+                        id="dynamicContent"
+                        class="dynamic-content"
+                    >
+                    </div>
+
+
+                </section>
+
+
+
+
+                <!-- =========================================
+                     FIXED CHAT INPUT
+                ========================================== -->
+
+                <footer class="chat-input-area">
+
+
+
+                    <button
+                        class="attach-button"
+                        id="attachButton"
+                        type="button"
+                        aria-label="Attach Medical Report"
+                    >
+                        📎
+                    </button>
+
+
+
+                    <input
+                        id="messageInput"
+                        type="text"
+                        placeholder="Type your message..."
+                        autocomplete="off"
+                    >
+
+
+
+                    <button
+                        class="send-button"
+                        id="sendButton"
+                        type="button"
+                        aria-label="Send Message"
+                    >
+                        ➤
+                    </button>
+
+
+                </footer>
+
+
+            </section>
+
+
+        </aside>
+
+
+    </main>
+
+
+
+
+    <!-- =====================================================
+         FILE UPLOAD INPUT
+    ====================================================== -->
+
+    <input
+        type="file"
+        id="medicalFileInput"
+        accept=".pdf,.jpg,.jpeg,.png"
+        hidden
+    >
+
+
+
+
+    <!-- =====================================================
+         TOAST
+    ====================================================== -->
+
+    <div
+        class="toast hidden"
+        id="toast"
+    >
+
+        <span id="toastText">
+            Action completed successfully.
+        </span>
+
+    </div>
+
+
+
+
+    <!-- =====================================================
+         JAVASCRIPT FILE
+         app.js is in the SAME folder as index.html
+    ====================================================== -->
+
+    <script src="app.js"></script>
+
+
+</body>
+
+</html>
