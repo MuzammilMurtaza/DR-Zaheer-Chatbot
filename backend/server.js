@@ -17,12 +17,17 @@ const treatmentRoutes = require('./routes/treatmentRoutes');
 const consultationRoutes = require('./routes/consultationRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const leadRoutes = require('./routes/leadRoutes');
+const { initFollowUpScheduler } = require('./services/leadFollowUpService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect Database
 connectDB();
+
+// Initialize Automated Follow-Up Service
+initFollowUpScheduler();
 
 // Production Security & Utility Middleware
 app.use(helmet({
@@ -56,6 +61,7 @@ app.use('/api/treatments', treatmentRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/leads', leadRoutes);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
@@ -76,6 +82,7 @@ app.listen(PORT, () => {
     console.log(` Server running on http://localhost:${PORT}`);
     console.log(` Patient Portal: http://localhost:${PORT}/patient/index.html`);
     console.log(` Admin Dashboard: http://localhost:${PORT}/admin/admin.html`);
+    console.log(` Ads Leads API:  http://localhost:${PORT}/api/leads`);
     console.log(`=======================================================`);
 });
 

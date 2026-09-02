@@ -5,6 +5,7 @@ const StaffMessage = require('../models/StaffMessage');
 const EmergencyAlert = require('../models/EmergencyAlert');
 const OffDay = require('../models/OffDay');
 const BlockedSlot = require('../models/BlockedSlot');
+const AdsLead = require('../models/AdsLead');
 const { getDBStatus } = require('../config/database');
 const { successResponse } = require('../utils/response');
 const { memoryAppointments } = require('./appointmentController');
@@ -25,6 +26,10 @@ const getDashboardStats = async (req, res, next) => {
         let pendingReportsReview = 0;
         let upcomingDoctorLeave = 0;
         let blockedSlotsCount = 0;
+        let totalAdsLeads = 0;
+        let newAdsLeads = 0;
+        let aiEngagedAdsLeads = 0;
+        let manualAdsLeads = 0;
 
         const dbConnected = getDBStatus();
 
@@ -43,6 +48,11 @@ const getDashboardStats = async (req, res, next) => {
 
                 upcomingDoctorLeave = await OffDay.countDocuments({ date: { $gte: todayStr } });
                 blockedSlotsCount = await BlockedSlot.countDocuments();
+
+                totalAdsLeads = await AdsLead.countDocuments();
+                newAdsLeads = await AdsLead.countDocuments({ leadStatus: 'New' });
+                aiEngagedAdsLeads = await AdsLead.countDocuments({ conversationMode: 'AI' });
+                manualAdsLeads = await AdsLead.countDocuments({ conversationMode: 'MANUAL' });
             } catch (e) {
                 // Ignore query error
             }
@@ -61,11 +71,12 @@ const getDashboardStats = async (req, res, next) => {
 
         const integrations = {
             database: dbConnected ? "CONNECTED" : "DEVELOPMENT MODE",
-            whatsapp: "NOT CONFIGURED",
+            whatsapp: "CONFIGURED",
             appointmentApi: "ACTIVE",
             reminderSystem: "SIMULATION",
             fileStorage: "CONNECTED",
-            aiAssistant: "ACTIVE"
+            aiAssistant: "ACTIVE",
+            adsLeadAutomation: "ACTIVE"
         };
 
         const stats = {
@@ -81,6 +92,10 @@ const getDashboardStats = async (req, res, next) => {
             humanHandovers,
             pendingEmergencyAlerts,
             pendingReportsReview,
+            totalAdsLeads,
+            newAdsLeads,
+            aiEngagedAdsLeads,
+            manualAdsLeads,
             integrations
         };
 

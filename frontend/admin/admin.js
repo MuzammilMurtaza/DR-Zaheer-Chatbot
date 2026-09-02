@@ -4,7 +4,7 @@
    Full-Stack REST Integration & Interactive Page Routing
 ========================================================= */
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "/api";
 
 const state = {
     token: localStorage.getItem("mza_admin_token") || null,
@@ -19,6 +19,16 @@ const state = {
     consultations: [],
     staffMessages: [],
     emergencyAlerts: [],
+    leads: [],
+    leadStats: null,
+    currentLead: null,
+    leadFilters: {
+        search: '',
+        source: '',
+        status: '',
+        mode: '',
+        priority: ''
+    },
     stats: null
 };
 
@@ -189,7 +199,9 @@ async function loadDashboardData() {
             fetchTreatments(),
             fetchConsultations(),
             fetchStaffInbox(),
-            fetchEmergencyAlerts()
+            fetchEmergencyAlerts(),
+            fetchLeads(),
+            fetchLeadStats()
         ]);
         updateOverviewDOM();
         navigateToPage(state.currentPage);
@@ -340,6 +352,7 @@ function updateOverviewDOM() {
     setBadgeStatus("reminderStatus", s.integrations?.reminderSystem || "ENABLED");
     setBadgeStatus("fileStorageStatus", s.integrations?.fileStorage || "CONNECTED");
     setBadgeStatus("aiStatus", s.integrations?.aiAssistant || "ACTIVE");
+    setBadgeStatus("adsAutomationStatus", s.integrations?.adsLeadAutomation || "ACTIVE");
 
     // Recent Appointments Table
     const tableBody = document.getElementById("recentAppointmentsTable");
@@ -449,6 +462,9 @@ function renderDynamicPage(page) {
             break;
         case "staff-inbox":
             renderStaffInboxPage();
+            break;
+        case "ads-leads":
+            renderAdsLeadsPage();
             break;
         default:
             renderAppointmentsPage();
@@ -1098,3 +1114,1008 @@ async function completeStaffInboxSubmit(id) {
     await fetchStaffInbox();
     renderStaffInboxPage();
 }
+
+// Fetch Leads from Backend
+async function fetchLeads() {
+    try {
+        const queryParams = new URLSearchParams();
+        if (state.leadFilters.search) queryParams.set('search', state.leadFilters.search);
+        if (state.leadFilters.source) queryParams.set('source', state.leadFilters.source);
+        if (state.leadFilters.status) queryParams.set('status', state.leadFilters.status);
+        if (state.leadFilters.mode) queryParams.set('mode', state.leadFilters.mode);
+        if (state.leadFilters.priority) queryParams.set('priority', state.leadFilters.priority);
+
+        const res = await fetch(`${API_BASE}/leads?${queryParams.toString()}`, {
+            headers: getAuthHeaders()
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            state.leads = json.data.leads || [];
+            const countEl = document.getElementById("leadsNavCount");
+            if (countEl) countEl.textContent = state.leads.length;
+        }
+    } catch (e) {
+        console.error("fetchLeads error:", e);
+    }
+}
+
+// Fetch Lead Statistics
+async function fetchLeadStats() {
+    try {
+        const res = await fetch(`${API_BASE}/leads/stats`, {
+            headers: getAuthHeaders()
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            state.leadStats = json.data;
+            const countEl = document.getElementById("leadsNavCount");
+            if (countEl) countEl.textContent = json.data.newLeads || 0;
+        }
+    } catch (e) {
+        console.error("fetchLeadStats error:", e);
+    }
+}
+
+/* =========================================================
+   15. ADS LEADS PAGE RENDERER
+========================================================= */
+
+function renderAdsLeadsPage() {
+    if (pageTitle) pageTitle.textContent = "AI Ads Leads Automation";
+    if (pageSubtitle) pageSubtitle.textContent = "Meta (Facebook / Instagram), WhatsApp & Website Ads Leads Automation & Manual Takeover";
+
+    const s = state.leadStats || {
+        totalLeads: 0,
+        newLeads: 0,
+        aiHandledLeads: 0,
+        manualLeads: 0,
+        qualifiedLeads: 0,
+        appointmentsBooked: 0,
+        convertedLeads: 0,
+        pendingFollowUps: 0,
+        conversionRate: "0.0%",
+        platformBreakdown: {
+            facebook_lead_ad: 0,
+            instagram_lead_ad: 0,
+            facebook_messenger: 0,
+            instagram_dm: 0,
+            whatsapp_ad: 0,
+            website_chatbot: 0,
+            manual_entry: 0
+        }
+    };
+
+    dynamicAdminPage.innerHTML = `
+        <!-- Actions & KPI Header -->
+        <div class="leads-action-bar">
+            <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--text-dark);">Lead Automation Hub</h3>
+                <p style="font-size: 12px; color: var(--text-secondary);">Manage automated AI qualification and staff manual takeover in one unified inbox.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-action blue" onclick="openTestLeadModal()">⚡ Test Lead Simulator</button>
+                <button class="btn-action green" onclick="openAddLeadModal()">+ Add New Lead</button>
+                <button class="btn-action gray" onclick="refreshLeadsData()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <!-- KPI Metric Cards Grid -->
+        <div class="dashboard-statistics mb-3">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Total Leads</span>
+                    <span class="stat-icon-box blue">🎯</span>
+                </div>
+                <h3 class="stat-number">${s.totalLeads}</h3>
+                <p class="stat-subtext">All channels combined</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">New Leads</span>
+                    <span class="stat-icon-box orange">🔔</span>
+                </div>
+                <h3 class="stat-number">${s.newLeads}</h3>
+                <p class="stat-subtext">Awaiting initial action</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">AI Handled</span>
+                    <span class="stat-icon-box purple">🤖</span>
+                </div>
+                <h3 class="stat-number">${s.aiHandledLeads}</h3>
+                <p class="stat-subtext">AI Mode active</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Manual Active</span>
+                    <span class="stat-icon-box green">👤</span>
+                </div>
+                <h3 class="stat-number">${s.manualLeads}</h3>
+                <p class="stat-subtext">Staff takeover active</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Qualified Leads</span>
+                    <span class="stat-icon-box green">🩺</span>
+                </div>
+                <h3 class="stat-number">${s.qualifiedLeads}</h3>
+                <p class="stat-subtext">Symptom qualified</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Appointments Booked</span>
+                    <span class="stat-icon-box blue">📅</span>
+                </div>
+                <h3 class="stat-number">${s.appointmentsBooked}</h3>
+                <p class="stat-subtext">Tokens generated</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Converted</span>
+                    <span class="stat-icon-box green">🏆</span>
+                </div>
+                <h3 class="stat-number">${s.convertedLeads}</h3>
+                <p class="stat-subtext">Patients attended</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-top">
+                    <span class="stat-label">Conversion Rate</span>
+                    <span class="stat-icon-box purple">📈</span>
+                </div>
+                <h3 class="stat-number">${s.conversionRate}</h3>
+                <p class="stat-subtext">Booking & conversion</p>
+            </div>
+        </div>
+
+        <!-- Platform Distribution Summary Bar -->
+        <div class="platform-summary-bar">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); align-self: center;">Channels:</span>
+            <div class="platform-pill fb">📘 Facebook: ${s.platformBreakdown?.facebook_lead_ad || 0}</div>
+            <div class="platform-pill ig">📸 Instagram: ${(s.platformBreakdown?.instagram_lead_ad || 0) + (s.platformBreakdown?.instagram_dm || 0)}</div>
+            <div class="platform-pill wa">💬 WhatsApp: ${s.platformBreakdown?.whatsapp_ad || 0}</div>
+            <div class="platform-pill web">💻 Website: ${s.platformBreakdown?.website_chatbot || 0}</div>
+            <div class="platform-pill manual">👤 Manual: ${s.platformBreakdown?.manual_entry || 0}</div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="leads-filter-container">
+            <div class="search-input-wrapper">
+                <span style="color: var(--text-muted); font-size: 14px;">🔍</span>
+                <input type="text" id="leadSearchInput" placeholder="Search by Patient Name, Phone, Email, Lead ID, Campaign or Treatment..." value="${state.leadFilters.search || ''}" oninput="handleLeadSearch(this.value)" />
+            </div>
+
+            <div class="filter-controls-row">
+                <select class="filter-select" id="filterSource" onchange="handleLeadFilterChange('source', this.value)">
+                    <option value="">All Channels / Sources</option>
+                    <option value="facebook_lead_ad" ${state.leadFilters.source === 'facebook_lead_ad' ? 'selected' : ''}>Facebook Lead Ads</option>
+                    <option value="instagram_lead_ad" ${state.leadFilters.source === 'instagram_lead_ad' ? 'selected' : ''}>Instagram Lead Ads</option>
+                    <option value="whatsapp_ad" ${state.leadFilters.source === 'whatsapp_ad' ? 'selected' : ''}>WhatsApp Ads / Chat</option>
+                    <option value="website_chatbot" ${state.leadFilters.source === 'website_chatbot' ? 'selected' : ''}>Website Chatbot</option>
+                    <option value="facebook_messenger" ${state.leadFilters.source === 'facebook_messenger' ? 'selected' : ''}>Facebook Messenger</option>
+                    <option value="instagram_dm" ${state.leadFilters.source === 'instagram_dm' ? 'selected' : ''}>Instagram DM</option>
+                    <option value="manual_entry" ${state.leadFilters.source === 'manual_entry' ? 'selected' : ''}>Manual Staff Entry</option>
+                </select>
+
+                <select class="filter-select" id="filterStatus" onchange="handleLeadFilterChange('status', this.value)">
+                    <option value="">All Statuses</option>
+                    <option value="New" ${state.leadFilters.status === 'New' ? 'selected' : ''}>New</option>
+                    <option value="AI Engaged" ${state.leadFilters.status === 'AI Engaged' ? 'selected' : ''}>AI Engaged</option>
+                    <option value="Qualified" ${state.leadFilters.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
+                    <option value="Appointment Requested" ${state.leadFilters.status === 'Appointment Requested' ? 'selected' : ''}>Appointment Requested</option>
+                    <option value="Appointment Booked" ${state.leadFilters.status === 'Appointment Booked' ? 'selected' : ''}>Appointment Booked</option>
+                    <option value="Follow-Up" ${state.leadFilters.status === 'Follow-Up' ? 'selected' : ''}>Follow-Up</option>
+                    <option value="Converted" ${state.leadFilters.status === 'Converted' ? 'selected' : ''}>Converted</option>
+                    <option value="Closed" ${state.leadFilters.status === 'Closed' ? 'selected' : ''}>Closed</option>
+                </select>
+
+                <select class="filter-select" id="filterMode" onchange="handleLeadFilterChange('mode', this.value)">
+                    <option value="">All Modes (AI & Manual)</option>
+                    <option value="AI" ${state.leadFilters.mode === 'AI' ? 'selected' : ''}>🤖 AI Mode Only</option>
+                    <option value="MANUAL" ${state.leadFilters.mode === 'MANUAL' ? 'selected' : ''}>👤 Manual Mode Only</option>
+                </select>
+
+                <select class="filter-select" id="filterPriority" onchange="handleLeadFilterChange('priority', this.value)">
+                    <option value="">All Priorities</option>
+                    <option value="urgent" ${state.leadFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                    <option value="high" ${state.leadFilters.priority === 'high' ? 'selected' : ''}>High</option>
+                    <option value="medium" ${state.leadFilters.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="low" ${state.leadFilters.priority === 'low' ? 'selected' : ''}>Low</option>
+                </select>
+
+                <button class="btn-action gray" style="padding: 6px 12px; font-size: 12px;" onclick="resetLeadFilters()">Reset Filters</button>
+            </div>
+        </div>
+
+        <!-- Leads Data Table Panel -->
+        <div class="dashboard-panel">
+            <div class="panel-header">
+                <h3>Ads Leads Directory (${state.leads.length})</h3>
+            </div>
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Lead ID</th>
+                            <th>Patient & Phone</th>
+                            <th>Source / Campaign</th>
+                            <th>Treatment</th>
+                            <th>Mode</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Last Message</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody">
+                        ${renderLeadsTableRows()}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+// Render Table Rows
+function renderLeadsTableRows() {
+    if (!state.leads || state.leads.length === 0) {
+        return `
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <strong>No leads found matching current criteria</strong>
+                        <p>Simulate a test lead or click "+ Add New Lead" above to get started.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    return state.leads.map(lead => {
+        const sourceLabel = formatSourceLabel(lead.source);
+        const modeBadgeClass = lead.conversationMode === 'MANUAL' ? 'manual' : 'ai';
+        const modeBadgeLabel = lead.conversationMode === 'MANUAL' ? '👤 MANUAL' : '🤖 AI';
+
+        return `
+            <tr>
+                <td><code>${lead.leadId}</code></td>
+                <td>
+                    <strong>${lead.patientName}</strong>
+                    <div style="font-size: 12px; color: var(--text-secondary);">${lead.phone}</div>
+                </td>
+                <td>
+                    <span class="platform-pill ${getSourcePillClass(lead.source)}" style="padding: 2px 8px; font-size: 11px;">${sourceLabel}</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${lead.campaignName || 'General'}</div>
+                </td>
+                <td>
+                    <div style="font-size: 12.5px; font-weight: 600; color: var(--text-dark); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${lead.interestedTreatment || 'General Consultation'}
+                    </div>
+                </td>
+                <td>
+                    <span class="mode-badge ${modeBadgeClass}">${modeBadgeLabel}</span>
+                </td>
+                <td>
+                    <span class="status-badge ${getLeadStatusBadgeClass(lead.leadStatus)}">${lead.leadStatus}</span>
+                </td>
+                <td>
+                    <span class="priority-pill ${lead.priority || 'medium'}">${(lead.priority || 'medium').toUpperCase()}</span>
+                </td>
+                <td>
+                    <div style="font-size: 11.5px; color: var(--text-secondary); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${lead.lastMessage || 'No messages yet'}
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted);">${formatTimeAgo(lead.lastMessageAt || lead.createdAt)}</div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn-action blue" style="padding: 4px 8px; font-size: 11px;" onclick="openLeadConversationModal('${lead._id}')">💬 Chat / Manage</button>
+                        <button class="btn-action gray" style="padding: 4px 6px; font-size: 11px;" title="Quick Toggle AI/Manual Mode" onclick="quickToggleLeadMode('${lead._id}', '${lead.conversationMode}')">⚡</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function formatSourceLabel(source) {
+    switch (source) {
+        case 'facebook_lead_ad': return 'Facebook Ad';
+        case 'instagram_lead_ad': return 'Instagram Ad';
+        case 'whatsapp_ad': return 'WhatsApp';
+        case 'website_chatbot': return 'Web Bot';
+        case 'facebook_messenger': return 'Messenger';
+        case 'instagram_dm': return 'IG DM';
+        case 'manual_entry': return 'Manual';
+        default: return 'Ad Lead';
+    }
+}
+
+function getSourcePillClass(source) {
+    if (source.includes('facebook') || source.includes('fb')) return 'fb';
+    if (source.includes('instagram') || source.includes('ig')) return 'ig';
+    if (source.includes('whatsapp') || source.includes('wa')) return 'wa';
+    if (source.includes('website')) return 'web';
+    return 'manual';
+}
+
+function getLeadStatusBadgeClass(status) {
+    switch (status) {
+        case 'New': return 'pending';
+        case 'AI Engaged': return 'confirmed';
+        case 'Qualified': return 'confirmed';
+        case 'Appointment Requested': return 'pending';
+        case 'Appointment Booked': return 'completed';
+        case 'Follow-Up': return 'pending';
+        case 'Converted': return 'completed';
+        case 'Closed': return 'cancelled';
+        case 'Not Interested': return 'cancelled';
+        default: return 'pending';
+    }
+}
+
+function formatTimeAgo(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffSec = Math.floor((now - date) / 1000);
+    if (diffSec < 60) return 'just now';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+    return date.toLocaleDateString();
+}
+
+// Search and Filter Handlers
+let searchDebounce = null;
+function handleLeadSearch(val) {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+        state.leadFilters.search = val.trim();
+        refreshLeadsData();
+    }, 300);
+}
+
+function handleLeadFilterChange(key, val) {
+    state.leadFilters[key] = val;
+    refreshLeadsData();
+}
+
+function resetLeadFilters() {
+    state.leadFilters = { search: '', source: '', status: '', mode: '', priority: '' };
+    refreshLeadsData();
+}
+
+async function refreshLeadsData() {
+    await Promise.all([fetchLeads(), fetchLeadStats()]);
+    if (state.currentPage === 'ads-leads') {
+        const tbody = document.getElementById('leadsTableBody');
+        if (tbody) tbody.innerHTML = renderLeadsTableRows();
+    }
+}
+
+/* =========================================================
+   16. UNIFIED LEAD CONVERSATION MODAL & ACTIONS
+========================================================= */
+
+let activeLeadPollInterval = null;
+
+async function openLeadConversationModal(leadId) {
+    const modal = document.getElementById("leadConversationModal");
+    if (!modal) return;
+
+    modal.style.display = "flex";
+
+    // Set Loading State
+    const container = document.getElementById("modalMessagesContainer");
+    if (container) container.innerHTML = '<div class="loading-spinner">Loading conversation history...</div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/${leadId}`, { headers: getAuthHeaders() });
+        const json = await res.json();
+        if (!json.success || !json.data) return;
+
+        state.currentLead = json.data;
+        updateModalLeadUI(state.currentLead);
+
+        await loadModalMessages(state.currentLead._id);
+
+        // Start active message polling for open modal
+        clearInterval(activeLeadPollInterval);
+        activeLeadPollInterval = setInterval(() => {
+            if (state.currentLead && modal.style.display === "flex") {
+                loadModalMessages(state.currentLead._id, true);
+            }
+        }, 4000);
+    } catch (e) {
+        console.error("Error opening lead modal:", e);
+    }
+}
+
+function closeLeadModal() {
+    const modal = document.getElementById("leadConversationModal");
+    if (modal) modal.style.display = "none";
+    clearInterval(activeLeadPollInterval);
+    state.currentLead = null;
+    refreshLeadsData();
+}
+
+function updateModalLeadUI(lead) {
+    if (!lead) return;
+
+    setElText("modalPatientName", lead.patientName);
+    setElText("modalLeadId", lead.leadId);
+    setElText("modalPhone", lead.phone);
+    setElText("modalEmail", lead.email || "No email provided");
+    setElText("modalCity", lead.city || "Lahore");
+    setElText("modalTreatment", lead.interestedTreatment || "General Consultation");
+    setElText("modalCampaign", lead.campaignName || "General Campaign");
+    setElText("modalPlatformId", lead.platformLeadId || "-");
+
+    const badge = document.getElementById("modalSourceBadge");
+    if (badge) {
+        badge.textContent = formatSourceLabel(lead.source);
+        badge.className = `lead-modal-badge ${getSourcePillClass(lead.source)}`;
+    }
+
+    const waLink = document.getElementById("modalWaLink");
+    if (waLink) {
+        const rawPhone = lead.phone.replace(/[^0-9]/g, '');
+        waLink.href = `https://wa.me/${rawPhone}`;
+    }
+
+    const callLink = document.getElementById("modalCallLink");
+    if (callLink) callLink.href = `tel:${lead.phone}`;
+
+    // Mode Toggle Controls
+    updateModalModeButtons(lead.conversationMode);
+
+    // Form inputs
+    const statusSelect = document.getElementById("modalLeadStatus");
+    if (statusSelect) statusSelect.value = lead.leadStatus;
+
+    const prioritySelect = document.getElementById("modalPriority");
+    if (prioritySelect) prioritySelect.value = lead.priority || "medium";
+
+    const assignedInput = document.getElementById("modalAssignedTo");
+    if (assignedInput) assignedInput.value = lead.assignedTo || "";
+
+    const notesInput = document.getElementById("modalNotes");
+    if (notesInput) notesInput.value = lead.notes || "";
+
+    if (lead.followUpAt) {
+        const followUpInput = document.getElementById("modalFollowUpDate");
+        if (followUpInput) {
+            const d = new Date(lead.followUpAt);
+            followUpInput.value = d.toISOString().slice(0, 16);
+        }
+    }
+
+    // Appointment Section
+    const apptBox = document.getElementById("modalApptDetails");
+    if (apptBox) {
+        if (lead.linkedAppointment) {
+            const appt = lead.linkedAppointment;
+            apptBox.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong>Token #${appt.tokenNumber}</strong>
+                    <span class="status-badge ${appt.status}">${appt.status.toUpperCase()}</span>
+                </div>
+                <div><code>${appt.appointmentId}</code></div>
+                <div style="margin-top: 4px;">📅 ${appt.date} | 🕒 ${appt.time}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${appt.clinic || 'Stay Young Clinic'}</div>
+            `;
+        } else if (lead.linkedAppointmentId) {
+            apptBox.innerHTML = `<div>Linked Appointment ID: <code>${lead.linkedAppointmentId}</code></div>`;
+        } else {
+            apptBox.innerHTML = `<p class="text-muted" style="margin: 0;">No appointment booked yet.</p>`;
+        }
+    }
+}
+
+function updateModalModeButtons(mode) {
+    const isManual = mode === "MANUAL";
+
+    const banner = document.getElementById("modalManualBanner");
+    if (banner) banner.style.display = isManual ? "flex" : "none";
+
+    const indicator = document.getElementById("modalModeIndicator");
+    if (indicator) {
+        indicator.textContent = isManual ? "Manual Takeover Active" : "AI Active";
+        indicator.style.background = isManual ? "#FEF3C7" : "#ECFDF5";
+        indicator.style.color = isManual ? "#B45309" : "#059669";
+    }
+
+    const desc = document.getElementById("modalModeDesc");
+    if (desc) {
+        desc.textContent = isManual
+            ? "AI automatic replies are paused. Staff can reply directly."
+            : "AI is automatically replying to patient messages.";
+    }
+
+    const btnAi = document.getElementById("btnToggleAi");
+    const btnManual = document.getElementById("btnToggleManual");
+
+    if (btnAi) {
+        btnAi.className = `btn-mode-toggle ${!isManual ? 'active-ai' : ''}`;
+    }
+    if (btnManual) {
+        btnManual.className = `btn-mode-toggle ${isManual ? 'active-manual' : ''}`;
+    }
+}
+
+// Load Conversation Timeline from MongoDB
+async function loadModalMessages(leadId, isSilent = false) {
+    const container = document.getElementById("modalMessagesContainer");
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/${leadId}/messages`, {
+            headers: getAuthHeaders()
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            const msgs = json.data.messages || [];
+
+            if (msgs.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <p style="font-size: 14px;">No messages recorded in database yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = msgs.map(m => {
+                const senderType = m.sender; // 'lead', 'AI', 'admin', 'system'
+                const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const senderName = m.sentBy || (senderType === 'AI' ? 'Dr. Zaheer AI Assistant' : (senderType === 'admin' ? 'Clinic Staff' : 'Patient'));
+
+                return `
+                    <div class="chat-msg-row ${senderType}">
+                        ${senderType !== 'system' ? `<span class="msg-sender-tag">${senderType === 'AI' ? '🤖 ' : (senderType === 'admin' ? '👤 ' : '')}${senderName}</span>` : ''}
+                        <div class="msg-bubble">
+                            ${escapeHtml(m.message).replace(/\n/g, '<br/>')}
+                        </div>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+
+            if (!isSilent) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    } catch (e) {
+        console.error("Error loading messages:", e);
+    }
+}
+
+function escapeHtml(unsafe) {
+    if (!unsafe) return "";
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Mode Switching Logic
+async function toggleCurrentLeadMode(targetMode) {
+    if (!state.currentLead) return;
+    const leadId = state.currentLead._id;
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/${leadId}/mode`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ mode: targetMode })
+        });
+        const json = await res.json();
+        if (json.success) {
+            state.currentLead.conversationMode = targetMode;
+            updateModalModeButtons(targetMode);
+            await loadModalMessages(leadId);
+        }
+    } catch (e) {
+        console.error("Mode toggle error:", e);
+    }
+}
+
+async function quickToggleLeadMode(leadId, currentMode) {
+    const newMode = currentMode === 'MANUAL' ? 'AI' : 'MANUAL';
+    try {
+        await fetch(`${API_BASE}/leads/${leadId}/mode`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ mode: newMode })
+        });
+        await refreshLeadsData();
+    } catch (e) {}
+}
+
+// Send Manual Admin Reply
+async function sendModalAdminMessage() {
+    if (!state.currentLead) return;
+    const input = document.getElementById("modalComposerInput");
+    if (!input) return;
+
+    const message = input.value.trim();
+    if (!message) return;
+
+    const sendBtn = document.getElementById("btnSendLeadMessage");
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/${state.currentLead._id}/messages`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                message,
+                sender: "admin"
+            })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+            input.value = "";
+            state.currentLead.conversationMode = "MANUAL";
+            updateModalModeButtons("MANUAL");
+            await loadModalMessages(state.currentLead._id);
+        }
+    } catch (e) {
+        console.error("Send message error:", e);
+    } finally {
+        if (sendBtn) sendBtn.disabled = false;
+    }
+}
+
+function handleComposerKey(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendModalAdminMessage();
+    }
+}
+
+// Quick Templates
+function insertQuickTemplate(type) {
+    const input = document.getElementById("modalComposerInput");
+    if (!input || !state.currentLead) return;
+
+    const pName = state.currentLead.patientName || "Patient";
+    const treatment = state.currentLead.interestedTreatment || "our specialized treatments";
+
+    let text = "";
+    switch (type) {
+        case "welcome":
+            text = `Hello ${pName}, thank you for contacting Dr. Muhammad Zaheer Anjum Clinic. How can we assist you with ${treatment} today?`;
+            break;
+        case "symptoms":
+            text = `To help Dr. Zaheer prepare for your consultation: Where is your pain located, how long has it lasted, and on a scale of 1 to 10, how severe is it?`;
+            break;
+        case "prp":
+            text = `Dr. Muhammad Zaheer Anjum specializes in advanced non-surgical Regenerative Medicine (PRP, Stem Cell, and Exosomes) for joint and spine pain at Stay Young Clinic, Lahore.`;
+            break;
+        case "location":
+            text = `📍 Clinic Location: Stay Young Clinic, 684 Shadman Main Road, Shadman 1, opposite Fatima Memorial Hospital, Lahore. Consultation Timings: Mon–Sat, 12:00 PM – 7:30 PM.`;
+            break;
+        case "slots":
+            text = `We have consultation slots available this week between 12:00 PM and 7:30 PM. Would you like to schedule an in-person or online consultation?`;
+            break;
+    }
+
+    input.value = text;
+    input.focus();
+}
+
+// Lead Management Updates
+async function updateModalLeadStatus(status) {
+    if (!state.currentLead) return;
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ leadStatus: status })
+    });
+}
+
+async function updateModalPriority(priority) {
+    if (!state.currentLead) return;
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ priority })
+    });
+}
+
+async function updateModalAssigned(assignedTo) {
+    if (!state.currentLead) return;
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ assignedTo })
+    });
+}
+
+async function saveModalNotes() {
+    if (!state.currentLead) return;
+    const notes = document.getElementById("modalNotes")?.value || "";
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ notes })
+    });
+    alert("Internal notes saved successfully.");
+}
+
+async function saveModalFollowUp() {
+    if (!state.currentLead) return;
+    const dateVal = document.getElementById("modalFollowUpDate")?.value;
+    const noteVal = document.getElementById("modalFollowUpNote")?.value || "";
+
+    if (!dateVal) {
+        alert("Please select a valid follow-up date and time.");
+        return;
+    }
+
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}/follow-up`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ followUpAt: dateVal, notes: noteVal })
+    });
+    await loadModalMessages(state.currentLead._id);
+    alert("Follow-up scheduled successfully.");
+}
+
+async function markModalLeadConverted() {
+    if (!state.currentLead) return;
+    const notes = prompt("Enter conversion details / treatment attended (optional):", "Attended initial consultation");
+    if (notes === null) return;
+
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}/convert`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ notes })
+    });
+    state.currentLead.leadStatus = "Converted";
+    updateModalLeadUI(state.currentLead);
+    await loadModalMessages(state.currentLead._id);
+}
+
+async function deleteModalLead() {
+    if (!state.currentLead) return;
+    if (!confirm(`Are you sure you want to delete lead ${state.currentLead.leadId} and all associated chat records?`)) return;
+
+    await fetch(`${API_BASE}/leads/${state.currentLead._id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+    });
+    closeLeadModal();
+}
+
+/* =========================================================
+   17. ADD LEAD MANUAL FORM
+========================================================= */
+
+function openAddLeadModal() {
+    const m = document.getElementById("addLeadModal");
+    if (m) m.style.display = "flex";
+}
+
+function closeAddLeadModal() {
+    const m = document.getElementById("addLeadModal");
+    if (m) m.style.display = "none";
+}
+
+async function submitAddLeadForm(e) {
+    e.preventDefault();
+
+    const data = {
+        patientName: document.getElementById("newLeadName")?.value?.trim(),
+        phone: document.getElementById("newLeadPhone")?.value?.trim(),
+        email: document.getElementById("newLeadEmail")?.value?.trim(),
+        city: document.getElementById("newLeadCity")?.value?.trim() || "Lahore",
+        source: document.getElementById("newLeadSource")?.value || "manual_entry",
+        interestedTreatment: document.getElementById("newLeadTreatment")?.value,
+        conversationMode: document.getElementById("newLeadMode")?.value || "AI",
+        priority: document.getElementById("newLeadPriority")?.value || "medium",
+        leadMessage: document.getElementById("newLeadMessage")?.value?.trim()
+    };
+
+    try {
+        const res = await fetch(`${API_BASE}/leads`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success) {
+            closeAddLeadModal();
+            document.getElementById("addLeadForm")?.reset();
+            await refreshLeadsData();
+            if (json.data?._id) {
+                openLeadConversationModal(json.data._id);
+            }
+        } else {
+            alert(json.message || "Could not save lead.");
+        }
+    } catch (err) {
+        console.error("Add lead error:", err);
+    }
+}
+
+/* =========================================================
+   18. TEST LEAD & WEBHOOK SIMULATOR
+========================================================= */
+
+function openTestLeadModal() {
+    const m = document.getElementById("testLeadModal");
+    if (m) m.style.display = "flex";
+}
+
+function closeTestLeadModal() {
+    const m = document.getElementById("testLeadModal");
+    if (m) m.style.display = "none";
+}
+
+function fillTestPreset(preset) {
+    const sourceEl = document.getElementById("simSource");
+    const nameEl = document.getElementById("simName");
+    const phoneEl = document.getElementById("simPhone");
+    const campEl = document.getElementById("simCampaign");
+    const msgEl = document.getElementById("simMessage");
+
+    const rnd = Math.floor(1000 + Math.random() * 9000);
+
+    switch (preset) {
+        case "fb_knee":
+            if (sourceEl) sourceEl.value = "facebook_lead_ad";
+            if (nameEl) nameEl.value = "Kashif Riaz";
+            if (phoneEl) phoneEl.value = `+92300${rnd}123`;
+            if (campEl) campEl.value = "FB Knee PRP Regeneration 2026";
+            if (msgEl) msgEl.value = "Hello, I have severe knee joint pain for 1 year. Can Dr. Zaheer help with PRP therapy? What is the consultation process?";
+            break;
+        case "ig_back":
+            if (sourceEl) sourceEl.value = "instagram_dm";
+            if (nameEl) nameEl.value = "Zainab Malik";
+            if (phoneEl) phoneEl.value = `+92321${rnd}456`;
+            if (campEl) campEl.value = "IG Spine & Back Pain Campaign";
+            if (msgEl) msgEl.value = "Hi! I am suffering from severe lower back pain and sciatica. Do you do image-guided injections?";
+            break;
+        case "wa_book":
+            if (sourceEl) sourceEl.value = "whatsapp_ad";
+            if (nameEl) nameEl.value = "Muhammad Usman";
+            if (phoneEl) phoneEl.value = `+92333${rnd}789`;
+            if (campEl) campEl.value = "WhatsApp Click-to-Chat Ad";
+            if (msgEl) msgEl.value = "Hello, please book an in-person appointment for me with Dr. Muhammad Zaheer Anjum for tomorrow at 2:00 PM.";
+            break;
+        case "emergency":
+            if (sourceEl) sourceEl.value = "whatsapp_ad";
+            if (nameEl) nameEl.value = "Emergency Test Patient";
+            if (phoneEl) phoneEl.value = `+92345${rnd}999`;
+            if (campEl) campEl.value = "Emergency Detection Check";
+            if (msgEl) msgEl.value = "I am having sudden weakness and severe chest pain with numbness in my arm!";
+            break;
+        case "human":
+            if (sourceEl) sourceEl.value = "facebook_messenger";
+            if (nameEl) nameEl.value = "Bilal Siddiqui";
+            if (phoneEl) phoneEl.value = `+92302${rnd}888`;
+            if (campEl) campEl.value = "Messenger Ad Inquiries";
+            if (msgEl) msgEl.value = "Can I please speak to a real human staff coordinator directly on the phone?";
+            break;
+    }
+}
+
+async function executeTestSimulation() {
+    const data = {
+        source: document.getElementById("simSource")?.value || "facebook_lead_ad",
+        patientName: document.getElementById("simName")?.value || "Simulated Lead",
+        phone: document.getElementById("simPhone")?.value || "+923000000000",
+        campaignName: document.getElementById("simCampaign")?.value || "Ad Campaign",
+        message: document.getElementById("simMessage")?.value || "Hello Dr. Zaheer Clinic",
+        conversationMode: "AI"
+    };
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/incoming-test`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success && json.data?.lead?._id) {
+            closeTestLeadModal();
+            await refreshLeadsData();
+            openLeadConversationModal(json.data.lead._id);
+        }
+    } catch (err) {
+        console.error("Simulation error:", err);
+    }
+}
+
+/* =========================================================
+   19. DIRECT APPOINTMENT BOOKING FOR ACTIVE LEAD
+========================================================= */
+
+function openQuickBookModal() {
+    if (!state.currentLead) return;
+    const m = document.getElementById("leadBookingModal");
+    if (!m) return;
+
+    setElText("bookPatientName", state.currentLead.patientName);
+    const pInput = document.getElementById("bookPatientName");
+    if (pInput) pInput.value = `${state.currentLead.patientName} (${state.currentLead.phone})`;
+
+    const tm = new Date();
+    tm.setDate(tm.getDate() + 1);
+    const dateInput = document.getElementById("bookDate");
+    if (dateInput) {
+        dateInput.value = tm.toISOString().slice(0, 10);
+        loadQuickSlotsForDate(dateInput.value);
+    }
+
+    m.style.display = "flex";
+}
+
+function closeLeadBookingModal() {
+    const m = document.getElementById("leadBookingModal");
+    if (m) m.style.display = "none";
+}
+
+async function loadQuickSlotsForDate(dateStr) {
+    const slotSelect = document.getElementById("bookTimeSlot");
+    if (!slotSelect) return;
+    slotSelect.innerHTML = "<option>Loading slots...</option>";
+
+    try {
+        const res = await fetch(`${API_BASE}/appointments/slots?date=${dateStr}`);
+        const json = await res.json();
+        if (json.success && json.data?.slots?.length > 0) {
+            slotSelect.innerHTML = json.data.slots.map(s => `<option value="${s}">${s}</option>`).join('');
+        } else {
+            slotSelect.innerHTML = "<option value='12:30 PM'>12:30 PM (Default)</option><option value='02:00 PM'>02:00 PM</option><option value='04:30 PM'>04:30 PM</option>";
+        }
+    } catch (e) {
+        slotSelect.innerHTML = "<option value='12:30 PM'>12:30 PM</option><option value='02:00 PM'>02:00 PM</option>";
+    }
+}
+
+async function submitLeadBookingForm(e) {
+    e.preventDefault();
+    if (!state.currentLead) return;
+
+    const data = {
+        date: document.getElementById("bookDate")?.value,
+        time: document.getElementById("bookTimeSlot")?.value,
+        appointmentType: document.getElementById("bookApptType")?.value,
+        clinic: "Stay Young Clinic",
+        notes: document.getElementById("bookNotes")?.value || ""
+    };
+
+    try {
+        const res = await fetch(`${API_BASE}/leads/${state.currentLead._id}/book-appointment`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success) {
+            closeLeadBookingModal();
+            state.currentLead = json.data.lead;
+            updateModalLeadUI(state.currentLead);
+            await loadModalMessages(state.currentLead._id);
+            await refreshLeadsData();
+        } else {
+            alert(json.message || "Failed to book appointment.");
+        }
+    } catch (err) {
+        console.error("Booking error:", err);
+    }
+}
+
