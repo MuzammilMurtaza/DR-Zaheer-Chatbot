@@ -1104,6 +1104,52 @@ button {
     line-height: 1.5;
 }
 
+.doctor-message {
+    width: fit-content;
+    max-width: 88%;
+    margin: 7px auto 7px 0;
+    padding: 10px 12px;
+    border: 1.5px solid #2457E6;
+    border-radius: 14px 14px 14px 4px;
+    background: #F4F7FF;
+    color: #0F234D;
+    font-size: 9.5px;
+    line-height: 1.5;
+    box-shadow: 0 2px 8px rgba(36, 87, 230, 0.08);
+}
+
+.doctor-sender-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #2457E6;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+}
+
+.system-notice-message {
+    width: fit-content;
+    max-width: 90%;
+    margin: 6px auto;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: #FFF7ED;
+    border: 1px solid #FED7AA;
+    color: #C2410C;
+    font-size: 8.5px;
+    font-weight: 600;
+    text-align: center;
+    display: block;
+}
+
+.online-status.manual {
+    background: #F59E0B;
+}
+
+
 
 /* =========================================================
    26. CHAT INPUT AREA

@@ -19,7 +19,9 @@ const state = {
     consultations: [],
     staffMessages: [],
     emergencyAlerts: [],
-    stats: null
+    stats: null,
+    activeStaffConversation: null,
+    conversationPollInterval: null
 };
 
 // DOM References
@@ -390,6 +392,11 @@ function setBadgeStatus(id, text) {
 
 // Router for switching sidebar pages
 function navigateToPage(page) {
+    if (page !== "staff-inbox" && state.conversationPollInterval) {
+        clearInterval(state.conversationPollInterval);
+        state.conversationPollInterval = null;
+        state.activeStaffConversation = null;
+    }
     if (page === "overview") {
         if (overviewPage) overviewPage.style.display = "block";
         if (dynamicAdminPage) dynamicAdminPage.style.display = "none";
@@ -1056,37 +1063,269 @@ async function resolveEmergencySubmit(id) {
 // 14. Staff Inbox Page
 function renderStaffInboxPage() {
     if (pageTitle) pageTitle.textContent = "Staff Inbox";
-    if (pageSubtitle) pageSubtitle.textContent = "Human assistance takeover requests";
+    if (pageSubtitle) pageSubtitle.textContent = "Human assistance takeover & patient conversations";
+
+    if (state.activeStaffConversation) {
+        renderStaffConversationDetail();
+        return;
+    }
 
     dynamicAdminPage.innerHTML = `
         <div class="dashboard-panel">
             <div class="panel-header">
-                <h3>Human Handover Inbox</h3>
+                <div>
+                    <h3>Patient Conversations & Handover Inbox</h3>
+                    <p style="font-size:12px; color:#64748B; margin-top:2px;">Manage AI Mode and Manual Doctor Takeover for each patient conversation</p>
+                </div>
+                <button class="btn-action blue" onclick="fetchStaffInbox().then(() => renderStaffInboxPage())">🔄 Refresh</button>
             </div>
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
-                        <tr><th>Patient Name</th><th>Phone</th><th>Message Details</th><th>Status</th><th>Actions</th></tr>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Phone / Session</th>
+                            <th>Conversation Mode</th>
+                            <th>Latest Message</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
                     </thead>
                     <tbody>
                         ${state.staffMessages.length ? state.staffMessages.map(m => `
                             <tr>
-                                <td><strong>${m.patientName}</strong></td>
-                                <td>${m.phone}</td>
-                                <td>${m.message}</td>
-                                <td><span class="status-badge ${m.status === 'completed' ? 'confirmed' : 'pending'}">${m.status.toUpperCase()}</span></td>
+                                <td><strong>${m.patientName || "Patient"}</strong></td>
+                                <td>${m.phone || m.sessionId || "—"}</td>
                                 <td>
-                                    <button class="btn-action green" onclick="completeStaffInboxSubmit('${m._id}')">Mark Done</button>
+                                    <span class="mode-badge ${m.mode === 'MANUAL' ? 'manual' : 'ai'}">
+                                        ${m.mode === 'MANUAL' ? '👨‍⚕️ Manual Mode' : '🤖 AI Active'}
+                                    </span>
+                                </td>
+                                <td style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    ${m.lastMessage || m.message || "—"}
+                                </td>
+                                <td><span class="status-badge ${m.status === 'completed' ? 'confirmed' : (m.status === 'in-progress' ? 'completed' : 'pending')}">${(m.status || 'pending').toUpperCase()}</span></td>
+                                <td>
+                                    <div style="display:flex; gap:6px;">
+                                        <button class="btn-action blue" onclick="openStaffConversation('${m._id}')">Open Chat</button>
+                                        ${m.status !== 'completed' ? `<button class="btn-action green" onclick="completeStaffInboxSubmit('${m._id}')">Mark Done</button>` : ''}
+                                    </div>
                                 </td>
                             </tr>
                         `).join("") : `
-                            <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">💬</div><strong>No staff handover messages</strong></div></td></tr>
+                            <tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">💬</div><strong>No patient conversations found</strong></div></td></tr>
                         `}
                     </tbody>
                 </table>
             </div>
         </div>
     `;
+}
+
+function renderStaffConversationDetail() {
+    const conv = state.activeStaffConversation;
+    if (!conv) return;
+
+    const isManual = conv.mode === 'MANUAL';
+    const messages = Array.isArray(conv.messages) ? conv.messages : [];
+
+    dynamicAdminPage.innerHTML = `
+        <div class="conversation-container">
+            <div class="conversation-header-row">
+                <div class="conv-patient-info">
+                    <button class="btn-action" style="margin-bottom:6px;" onclick="closeStaffConversation()">← Back to Inbox</button>
+                    <h3>${conv.patientName || "Patient"} <span style="font-size:13px; font-weight:normal; color:#64748B;">(${conv.phone || conv.sessionId || "Patient Chat"})</span></h3>
+                    <p>Status: <strong>${(conv.status || 'pending').toUpperCase()}</strong> | Mode: <strong>${conv.mode || 'AI'}</strong> ${conv.manualTakeoverAt ? `| Takeover: ${new Date(conv.manualTakeoverAt).toLocaleTimeString()}` : ''}</p>
+                </div>
+                
+                <div class="conv-header-actions">
+                    <span class="mode-badge ${isManual ? 'manual' : 'ai'}">
+                        ${isManual ? `👨‍⚕️ Manual Mode Active` : `🤖 AI Assistant Active`}
+                    </span>
+                    
+                    ${isManual ? `
+                        <button class="btn-action blue" onclick="returnToAIChat('${conv._id}')">
+                            🤖 Return to AI
+                        </button>
+                    ` : `
+                        <button class="btn-action orange" onclick="takeoverPatientChat('${conv._id}')">
+                            ⚡ Take Over Manually
+                        </button>
+                    `}
+                </div>
+            </div>
+
+            <div class="conversation-message-feed" id="adminConversationFeed">
+                ${messages.length ? messages.map(msg => {
+                    const sender = (msg.sender || 'PATIENT').toUpperCase();
+                    let rowClass = 'patient';
+                    let senderLabel = `👤 ${msg.senderName || 'Patient'}`;
+
+                    if (sender === 'AI') {
+                        rowClass = 'ai';
+                        senderLabel = '🤖 Dr. Zaheer AI Assistant';
+                    } else if (sender === 'DOCTOR') {
+                        rowClass = 'doctor';
+                        senderLabel = `👨‍⚕️ ${msg.senderName || 'Dr. Muhammad Zaheer Anjum'} (Doctor)`;
+                    } else if (sender === 'STAFF') {
+                        rowClass = 'system';
+                        senderLabel = '⚙️ System';
+                    }
+
+                    const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                    return `
+                        <div class="chat-msg-row ${rowClass}">
+                            <div class="chat-msg-sender">${senderLabel}</div>
+                            <div class="chat-msg-bubble">
+                                ${msg.text}
+                            </div>
+                            <div class="chat-msg-time">${timeStr}</div>
+                        </div>
+                    `;
+                }).join("") : `
+                    <div class="empty-state" style="padding:20px;">
+                        <div class="empty-state-icon">💬</div>
+                        <strong>No messages yet in this conversation</strong>
+                    </div>
+                `}
+            </div>
+
+            <div class="conversation-composer-box">
+                <div class="conversation-composer-row">
+                    <input 
+                        type="text" 
+                        id="doctorReplyInput" 
+                        placeholder="Type manual response to patient as Dr. Muhammad Zaheer Anjum..." 
+                        autocomplete="off"
+                        onkeydown="if(event.key==='Enter') sendDoctorReply('${conv._id}')"
+                    >
+                    <button class="btn-primary" onclick="sendDoctorReply('${conv._id}')" style="height:42px; padding:0 20px; white-space:nowrap;">
+                        Send Reply ➤
+                    </button>
+                </div>
+                <div class="conversation-hint">
+                    ${isManual ? 
+                        `⚡ <strong>Manual Mode is active:</strong> AI responses are paused for this patient. Only your manual replies are sent.` : 
+                        `🤖 <strong>AI Mode is active:</strong> AI answers the patient automatically. Click <strong>Take Over Manually</strong> to take control.`}
+                </div>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => {
+        const feed = document.getElementById("adminConversationFeed");
+        if (feed) feed.scrollTop = feed.scrollHeight;
+        const input = document.getElementById("doctorReplyInput");
+        if (input) input.focus();
+    }, 50);
+}
+
+async function openStaffConversation(id) {
+    try {
+        const res = await fetch(`${API_BASE}/staff/inbox/${id}`, {
+            headers: getAuthHeaders()
+        });
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            state.activeStaffConversation = resJson.data;
+            renderStaffInboxPage();
+
+            // Auto-refresh active conversation every 3 seconds for live chat
+            if (state.conversationPollInterval) clearInterval(state.conversationPollInterval);
+            state.conversationPollInterval = setInterval(async () => {
+                if (!state.activeStaffConversation) return;
+                try {
+                    const pollRes = await fetch(`${API_BASE}/staff/inbox/${id}`, { headers: getAuthHeaders() });
+                    const pollJson = await pollRes.json();
+                    if (pollJson.success && pollJson.data) {
+                        const prevMsgCount = (state.activeStaffConversation.messages || []).length;
+                        const newMsgCount = (pollJson.data.messages || []).length;
+                        const prevMode = state.activeStaffConversation.mode;
+                        const newMode = pollJson.data.mode;
+
+                        state.activeStaffConversation = pollJson.data;
+                        if (prevMsgCount !== newMsgCount || prevMode !== newMode) {
+                            renderStaffConversationDetail();
+                        }
+                    }
+                } catch (e) {}
+            }, 3000);
+        }
+    } catch (e) {
+        console.error("Failed to load conversation", e);
+    }
+}
+
+function closeStaffConversation() {
+    if (state.conversationPollInterval) {
+        clearInterval(state.conversationPollInterval);
+        state.conversationPollInterval = null;
+    }
+    state.activeStaffConversation = null;
+    fetchStaffInbox().then(() => renderStaffInboxPage());
+}
+
+async function takeoverPatientChat(id) {
+    try {
+        const res = await fetch(`${API_BASE}/staff/inbox/${id}/takeover`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ adminName: "Dr. Muhammad Zaheer Anjum" })
+        });
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            state.activeStaffConversation = resJson.data;
+            renderStaffConversationDetail();
+            await fetchStaffInbox();
+        }
+    } catch (e) {
+        console.error("Failed to takeover conversation", e);
+    }
+}
+
+async function returnToAIChat(id) {
+    try {
+        const res = await fetch(`${API_BASE}/staff/inbox/${id}/return-ai`, {
+            method: "POST",
+            headers: getAuthHeaders()
+        });
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            state.activeStaffConversation = resJson.data;
+            renderStaffConversationDetail();
+            await fetchStaffInbox();
+        }
+    } catch (e) {
+        console.error("Failed to return conversation to AI", e);
+    }
+}
+
+async function sendDoctorReply(id) {
+    const input = document.getElementById("doctorReplyInput");
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        input.value = "";
+        const res = await fetch(`${API_BASE}/staff/inbox/${id}/reply`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                message: text,
+                senderName: "Dr. Muhammad Zaheer Anjum"
+            })
+        });
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            state.activeStaffConversation = resJson.data;
+            renderStaffConversationDetail();
+            await fetchStaffInbox();
+        }
+    } catch (e) {
+        console.error("Failed to send reply", e);
+    }
 }
 
 async function completeStaffInboxSubmit(id) {

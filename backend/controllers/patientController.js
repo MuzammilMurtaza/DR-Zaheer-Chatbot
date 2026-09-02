@@ -8,7 +8,31 @@ const getPatients = async (req, res, next) => {
     try {
         let patients = [];
         try {
-            patients = await Patient.find().sort({ createdAt: -1 });
+            const rawPatients = await Patient.find().sort({ createdAt: -1 }).lean();
+            const appointments = await Appointment.find({ status: { $nin: ['cancelled'] } }).sort({ date: -1, createdAt: -1 }).lean();
+
+            const phoneToStats = {};
+            appointments.forEach(app => {
+                const cleanPhone = (app.phone || '').trim();
+                if (!phoneToStats[cleanPhone]) {
+                    phoneToStats[cleanPhone] = {
+                        totalAppointments: 1,
+                        latestAppointment: `${app.date} (${app.time})`
+                    };
+                } else {
+                    phoneToStats[cleanPhone].totalAppointments += 1;
+                }
+            });
+
+            patients = rawPatients.map(p => {
+                const cleanPhone = (p.phone || '').trim();
+                const stats = phoneToStats[cleanPhone] || {};
+                return {
+                    ...p,
+                    totalAppointments: stats.totalAppointments || 0,
+                    latestAppointment: stats.latestAppointment || 'None'
+                };
+            });
         } catch (e) {
             // Build aggregated patients from memoryAppointments
             const phoneMap = {};

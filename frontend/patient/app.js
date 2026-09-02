@@ -43,11 +43,31 @@ const CONFIG = {
    Later this will be connected with backend + MongoDB.
 ========================================================= */
 
+const renderedMessageIds = new Set();
+let chatInitialized = false;
+let chatPollingInterval = null;
+let isSyncing = false;
+let isSending = false;
+let lastSequence = 0;
+
 const state = {
 
     language: "english",
 
     currentStep: null,
+
+    sessionId: (() => {
+        let sid = localStorage.getItem("mza_patient_session_id");
+        if (!sid) {
+            sid = "sess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
+            localStorage.setItem("mza_patient_session_id", sid);
+        }
+        return sid;
+    })(),
+
+    conversationMode: "AI",
+
+    renderedMessageKeys: renderedMessageIds,
 
     booking: {
 
@@ -132,6 +152,15 @@ const toast =
 const toastText =
     document.getElementById("toastText");
 
+const patientChatModeLabel =
+    document.getElementById("patientChatModeLabel");
+
+const patientOnlineStatus =
+    document.getElementById("patientOnlineStatus");
+
+const chatMessagesFeed =
+    document.getElementById("chatMessagesFeed");
+
 
 /* =========================================================
    4. INITIALIZE APPLICATION
@@ -148,6 +177,8 @@ function initializeApp() {
     setupUtilityButtons();
 
     setupFileUpload();
+
+    initChatSync();
 
     scrollChatToBottom();
 
@@ -202,33 +233,16 @@ function selectLanguage(language) {
 
     state.language = language;
 
+    if (welcomeCard) welcomeCard.classList.add("hidden");
+    if (mainMenu) mainMenu.classList.remove("hidden");
+
     if (language === "urdu") {
-
-        addUserMessage("اردو");
-
-        languageButton.textContent =
-            "🌐 English";
-
-        addBotMessage(
-            "اردو منتخب کر لی گئی ہے۔ آپ نیچے موجود آپشنز استعمال کر سکتے ہیں۔"
-        );
-
+        languageButton.textContent = "🌐 English";
+        sendPatientMessageToBackend("اردو", "LANG_URDU");
     } else {
-
-        addUserMessage("English");
-
-        languageButton.textContent =
-            "🌐 اردو";
-
-        addBotMessage(
-            "English selected. How may I help you today?"
-        );
-
+        languageButton.textContent = "🌐 اردو";
+        sendPatientMessageToBackend("English", "LANG_ENGLISH");
     }
-
-    welcomeCard.classList.add("hidden");
-
-    showMainMenu();
 
 }
 
@@ -292,145 +306,223 @@ function setupMenuButtons() {
 
 function handleMenuAction(action) {
 
-    hideMainMenu();
-
-    clearDynamicContent();
-
     switch (action) {
 
         case "bookAppointment":
-
-            addUserMessage(
-                "📅 Book Appointment"
-            );
-
-            startBooking();
-
+            sendPatientMessageToBackend("📅 Book Appointment", "BOOK_APPOINTMENT");
             break;
-
-
-        case "manageAppointment":
-
-            addUserMessage(
-                "🗓️ Manage Appointment"
-            );
-
-            showManageAppointment();
-
-            break;
-
-
-        case "clinicInformation":
-
-            addUserMessage(
-                "🏥 Clinic Information"
-            );
-
-            showClinicInformation();
-
-            break;
-
-
-        case "treatmentInformation":
-
-            addUserMessage(
-                "🩺 Treatment Information"
-            );
-
-            showTreatmentInformation();
-
-            break;
-
-
-        case "doctorProfile":
-
-            addUserMessage(
-                "👨‍⚕️ Doctor Profile"
-            );
-
-            showDoctorProfile();
-
-            break;
-
 
         case "onlineConsultation":
-
-            addUserMessage(
-                "💻 Online Consultation"
-            );
-
-            startOnlineConsultation();
-
+            sendPatientMessageToBackend("💻 Online Consultation", "START_CONSULTATION");
             break;
 
+        case "clinicInformation":
+            sendPatientMessageToBackend("🏥 Clinic Timings & Location");
+            break;
+
+        case "treatmentInformation":
+            sendPatientMessageToBackend("🩺 Treatment & Pain Management Information");
+            break;
+
+        case "doctorProfile":
+            sendPatientMessageToBackend("👨‍⚕️ Doctor Profile & Qualifications");
+            break;
+
+        case "manageAppointment":
+            sendPatientMessageToBackend("🗓️ Manage My Appointment");
+            break;
 
         case "uploadReports":
-
-            addUserMessage(
-                "📎 Upload Reports"
-            );
-
-            startReportUpload();
-
+            sendPatientMessageToBackend("📎 Upload Medical Reports");
             break;
-
 
         case "speakToStaff":
-
-            addUserMessage(
-                "🎧 Speak to Staff"
-            );
-
-            requestStaffHandover();
-
+            sendPatientMessageToBackend("🎧 Speak to Clinic Staff");
             break;
 
+        default:
+            if (action) sendPatientMessageToBackend(action);
+            break;
     }
 
 }
 
 
-/* =========================================================
-   11. ADD BOT MESSAGE
-========================================================= */
-
-function addBotMessage(message) {
-
-    const bubble =
-        document.createElement("div");
-
-    bubble.className =
-        "bot-message";
-
-    bubble.textContent =
-        message;
-
-    dynamicContent.appendChild(bubble);
-
-    scrollChatToBottom();
-
+function syncInputStateForWorkflow(workflow, step) {
+    if (!messageInput) return;
+    if (workflow === 'APPOINTMENT') {
+        if (step === 'AWAITING_NAME') {
+            messageInput.placeholder = "Enter patient's full name...";
+            messageInput.disabled = false;
+            messageInput.focus();
+        } else if (step === 'AWAITING_PHONE') {
+            messageInput.placeholder = "Enter phone number (e.g. 03001234567)...";
+            messageInput.disabled = false;
+            messageInput.focus();
+        } else if (step === 'AWAITING_TYPE' || step === 'AWAITING_CITY' || step === 'AWAITING_DATE' || step === 'AWAITING_SLOT') {
+            messageInput.placeholder = "Please choose an option above 👆";
+            messageInput.disabled = true;
+        } else {
+            messageInput.placeholder = "Type your message...";
+            messageInput.disabled = false;
+        }
+    } else {
+        messageInput.placeholder = "Type your message...";
+        messageInput.disabled = false;
+    }
 }
 
 
 /* =========================================================
-   12. ADD USER MESSAGE
+   11. GET MESSAGES FEED & RENDER MESSAGE ITEM
 ========================================================= */
 
+function getMessagesFeed() {
+    const feed = document.getElementById("chatMessagesFeed");
+    if (!feed) {
+        console.error("Chat messages feed not found. Expected element: #chatMessagesFeed");
+        return null;
+    }
+    return feed;
+}
+
+function renderMessageItem(msg) {
+    if (!msg || (!msg.text && !msg.options && !msg.metadata)) return;
+    const msgId = msg.messageId || `${msg.sender}_${msg.sequence || ''}_${msg.text || ''}`;
+    if (renderedMessageIds.has(msgId)) return;
+    renderedMessageIds.add(msgId);
+
+    const feed = getMessagesFeed();
+    if (!feed) return;
+
+    const sender = (msg.sender || 'PATIENT').toUpperCase();
+    const text = msg.text || '';
+    const senderName = msg.senderName || '';
+    const contentType = msg.contentType || 'TEXT';
+
+    let el = null;
+    if (sender === 'PATIENT') {
+        el = document.createElement("div");
+        el.className = "user-message";
+        el.dataset.messageId = msgId;
+        el.textContent = text;
+    } else if (sender === 'AI') {
+        el = document.createElement("div");
+        el.className = "bot-message";
+        el.dataset.messageId = msgId;
+
+        if (contentType === 'APPOINTMENT_CARD' && msg.metadata && msg.metadata.bookingData) {
+            const b = msg.metadata.bookingData;
+            el.innerHTML = `
+                <div class="appointment-confirmation-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+                    <h4 style="color:#0f766e; margin-bottom:6px;">🎉 Appointment Confirmed</h4>
+                    <p style="margin-bottom:8px; font-weight:600; color:#334155;">${text}</p>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px; font-size:13px; color:#166534; line-height:1.6;">
+                        <div><strong>🎟️ Token Number:</strong> #${b.tokenNumber || '001'}</div>
+                        <div><strong>🆔 Appointment ID:</strong> ${b.appointmentId || 'MZA-2026-1001'}</div>
+                        <div><strong>👤 Patient:</strong> ${b.patientName || 'Patient'}</div>
+                        <div><strong>📞 Contact:</strong> ${b.phone || 'Provided'}</div>
+                        <div><strong>🏥 Type:</strong> ${b.consultationType || 'In-Person Consultation'}</div>
+                        <div><strong>📍 Location:</strong> ${b.city || 'Stay Young Clinic, Lahore'}</div>
+                        <div><strong>📅 Date:</strong> ${b.date || 'Scheduled'}</div>
+                        <div><strong>⏰ Time Slot:</strong> ${b.timeSlot || 'Confirmed'}</div>
+                        <div><strong>👨‍⚕️ Specialist:</strong> Dr. Muhammad Zaheer Anjum</div>
+                    </div>
+                </div>
+            `;
+        } else if ((contentType === 'OPTIONS' || contentType === 'DATE_SELECTION' || contentType === 'TIME_SLOT_SELECTION') && Array.isArray(msg.options) && msg.options.length > 0) {
+            const container = document.createElement("div");
+            container.className = "bot-options-container";
+            
+            const titleP = document.createElement("div");
+            titleP.textContent = text;
+            titleP.style.marginBottom = "8px";
+            titleP.style.fontWeight = "500";
+            container.appendChild(titleP);
+
+            const optionsWrapper = document.createElement("div");
+            optionsWrapper.className = "options-buttons-grid";
+            optionsWrapper.style.display = "flex";
+            optionsWrapper.style.flexWrap = "wrap";
+            optionsWrapper.style.gap = "6px";
+            optionsWrapper.style.marginTop = "6px";
+
+            msg.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "chat-option dynamic-option-btn";
+                btn.textContent = opt.label;
+                btn.style.padding = "8px 12px";
+                btn.style.fontSize = "13px";
+                btn.style.cursor = "pointer";
+                btn.addEventListener("click", () => {
+                    optionsWrapper.querySelectorAll("button").forEach(b => {
+                        b.disabled = true;
+                        b.style.opacity = "0.6";
+                        b.style.cursor = "not-allowed";
+                    });
+                    btn.style.borderColor = "var(--primary-color, #0f766e)";
+                    btn.style.fontWeight = "bold";
+                    sendPatientMessageToBackend(opt.label, opt.value, opt.action);
+                });
+                optionsWrapper.appendChild(btn);
+            });
+
+            container.appendChild(optionsWrapper);
+            el.appendChild(container);
+        } else {
+            el.textContent = text;
+        }
+    } else if (sender === 'DOCTOR') {
+        el = document.createElement("div");
+        el.className = "doctor-message";
+        el.dataset.messageId = msgId;
+        el.innerHTML = `
+            <div class="doctor-sender-badge">👨‍⚕️ ${senderName || 'Dr. Muhammad Zaheer Anjum'} (Doctor)</div>
+            <div>${text}</div>
+        `;
+    } else if (sender === 'STAFF' || sender === 'SYSTEM') {
+        el = document.createElement("div");
+        el.className = "system-notice-message";
+        el.dataset.messageId = msgId;
+        el.textContent = text;
+    }
+
+    if (el) {
+        feed.appendChild(el);
+    }
+
+    if (msg.workflow !== undefined) {
+        syncInputStateForWorkflow(msg.workflow, msg.workflowStep);
+    }
+}
+
+function renderConversationHistory(messagesList) {
+    if (!Array.isArray(messagesList)) return;
+    const sorted = [...messagesList].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+    sorted.forEach(msg => {
+        renderMessageItem(msg);
+    });
+}
+
+function addBotMessage(message) {
+    renderMessageItem({
+        messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        sender: 'AI',
+        senderName: 'Dr. Zaheer AI Assistant',
+        text: message,
+        timestamp: new Date()
+    });
+}
+
 function addUserMessage(message) {
-
-    const bubble =
-        document.createElement("div");
-
-    bubble.className =
-        "user-message";
-
-    bubble.textContent =
-        message;
-
-    dynamicContent.appendChild(bubble);
-
-    scrollChatToBottom();
-
+    renderMessageItem({
+        messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        sender: 'PATIENT',
+        senderName: state.booking.patientName || 'Patient',
+        text: message,
+        timestamp: new Date()
+    });
 }
 
 
@@ -2152,7 +2244,7 @@ function requestStaffHandover() {
 
                 <p>
                     Your request can be transferred
-                    to a human clinic assistant.
+                    to a human clinic assistant or Dr. Muhammad Zaheer Anjum.
                 </p>
 
             `
@@ -2165,19 +2257,39 @@ function requestStaffHandover() {
 
             "Request Human Assistant",
 
-            () => {
+            async () => {
 
                 addUserMessage(
                     "Request Human Assistant"
                 );
 
-                addBotMessage(
-                    "Your staff assistance request has been recorded."
-                );
-
                 showToast(
                     "Staff handover requested."
                 );
+
+                try {
+                    const response = await fetch("http://localhost:5000/api/staff/handover", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            sessionId: state.sessionId,
+                            patientName: state.booking.patientName || "Patient",
+                            phone: state.booking.phone || "03001234567",
+                            message: "Patient requested human clinic staff assistant."
+                        })
+                    });
+                    const resJson = await response.json();
+                    if (resJson.success && resJson.data && resJson.data.mode) {
+                        updateModeHeader(resJson.data.mode);
+                    }
+                    addBotMessage(
+                        "Your staff assistance request has been recorded. Dr. Muhammad Zaheer or a clinic assistant will review it shortly."
+                    );
+                } catch (e) {
+                    addBotMessage(
+                        "Your staff assistance request has been recorded."
+                    );
+                }
 
             }
 
@@ -2202,90 +2314,225 @@ function requestStaffHandover() {
 
 
 /* =========================================================
-   51. MESSAGE COMPOSER
+   51. MESSAGE COMPOSER & BACKEND AI/MANUAL INTEGRATION
 ========================================================= */
 
-function setupMessageComposer() {
+function updateModeHeader(mode, takenBy) {
+    state.conversationMode = mode || "AI";
+    if (patientChatModeLabel && patientOnlineStatus) {
+        if (mode === "MANUAL") {
+            patientOnlineStatus.classList.add("manual");
+            patientChatModeLabel.textContent = "Manual Mode Active (Doctor Responding)";
+        } else {
+            patientOnlineStatus.classList.remove("manual");
+            patientChatModeLabel.textContent = "AI Assistant Active";
+        }
+    }
+}
 
-    sendButton.addEventListener(
-        "click",
-        sendTypedMessage
-    );
+function addDoctorMessage(message, senderName = "Dr. Muhammad Zaheer Anjum") {
+    renderMessageItem({
+        messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        sender: 'DOCTOR',
+        senderName: senderName,
+        text: message,
+        timestamp: new Date()
+    });
+}
 
+function addSystemNotice(message) {
+    renderMessageItem({
+        messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        sender: 'SYSTEM',
+        senderName: 'System',
+        text: message,
+        timestamp: new Date()
+    });
+}
 
-    messageInput.addEventListener(
-        "keydown",
-        (event) => {
+async function sendPatientMessageToBackend(text, payload = null, action = null) {
+    if (isSending) return;
+    isSending = true;
+    if (sendButton) sendButton.disabled = true;
 
-            if (
-                event.key === "Enter"
-            ) {
+    try {
+        const clientMessageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-                sendTypedMessage();
+        const response = await fetch("http://localhost:5000/api/staff/chat/message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                sessionId: state.sessionId,
+                patientName: state.booking.patientName || "Patient",
+                phone: state.booking.phone || "",
+                message: text,
+                payload: payload || text,
+                workflowAction: action,
+                language: state.language,
+                clientMessageId: clientMessageId
+            })
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to send message`);
+        }
 
+        const resJson = await response.json();
+        if (resJson.success && resJson.data) {
+            updateModeHeader(resJson.data.mode, resJson.data.manualTakenBy);
+            
+            if (Array.isArray(resJson.data.messages)) {
+                const sorted = [...resJson.data.messages].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                let renderedAny = false;
+                sorted.forEach(msg => {
+                    const msgId = msg.messageId || `${msg.sender}_${msg.sequence || ''}_${msg.text || ''}`;
+                    if (!renderedMessageIds.has(msgId)) {
+                        renderMessageItem(msg);
+                        renderedAny = true;
+                    }
+                });
+                if (resJson.data.lastSequence) {
+                    lastSequence = Math.max(lastSequence, resJson.data.lastSequence);
+                }
+                if (renderedAny) {
+                    scrollChatToBottom();
+                }
             }
 
+            syncInputStateForWorkflow(resJson.data.activeWorkflow, resJson.data.workflowStep);
+        }
+    } catch (e) {
+        console.error("Message send error:", e);
+        showToast("Message could not be sent. Please check your connection and try again.");
+    } finally {
+        isSending = false;
+        if (sendButton) sendButton.disabled = false;
+        if (messageInput && !messageInput.disabled) messageInput.focus();
+    }
+}
+
+async function loadInitialChatHistory() {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+        const phoneParam = encodeURIComponent(state.booking.phone || "");
+        const res = await fetch(`http://localhost:5000/api/staff/chat/messages?sessionId=${state.sessionId}&phone=${phoneParam}`);
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            const data = resJson.data;
+            updateModeHeader(data.mode, data.manualTakenBy);
+            
+            // Clean previously rendered dynamic message items from feed once
+            const feed = getMessagesFeed();
+            if (feed) {
+                feed.innerHTML = "";
+            }
+            renderedMessageIds.clear();
+
+            if (Array.isArray(data.messages) && data.messages.length > 0) {
+                const sorted = [...data.messages].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                sorted.forEach(msg => renderMessageItem(msg));
+                lastSequence = data.lastSequence || sorted[sorted.length - 1].sequence || 0;
+                scrollChatToBottom();
+            } else {
+                lastSequence = 0;
+            }
+        }
+    } catch (e) {
+        console.warn("Initial chat load error:", e);
+    } finally {
+        isSyncing = false;
+    }
+}
+
+async function pollNewMessages() {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+        const phoneParam = encodeURIComponent(state.booking.phone || "");
+        const res = await fetch(`http://localhost:5000/api/staff/chat/messages?sessionId=${state.sessionId}&phone=${phoneParam}&afterSequence=${lastSequence}`);
+        const resJson = await res.json();
+        if (resJson.success && resJson.data) {
+            const data = resJson.data;
+            updateModeHeader(data.mode, data.manualTakenBy);
+
+            const newMessages = Array.isArray(data.messages) ? data.messages : [];
+            if (newMessages.length > 0) {
+                const sorted = [...newMessages].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                let renderedAny = false;
+                sorted.forEach(msg => {
+                    const msgId = msg.messageId || `${msg.sender}_${msg.sequence || ''}_${msg.text}`;
+                    if (!renderedMessageIds.has(msgId)) {
+                        renderMessageItem(msg);
+                        renderedAny = true;
+                    }
+                });
+                lastSequence = data.lastSequence || sorted[sorted.length - 1].sequence || lastSequence;
+                if (renderedAny) {
+                    scrollChatToBottom();
+                }
+            }
+        }
+    } catch (e) {
+    } finally {
+        isSyncing = false;
+    }
+}
+
+async function initChatSync() {
+    if (chatInitialized) return;
+    chatInitialized = true;
+
+    if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+        chatPollingInterval = null;
+    }
+
+    await loadInitialChatHistory();
+    chatPollingInterval = setInterval(pollNewMessages, 2500);
+}
+
+window.addEventListener("beforeunload", () => {
+    if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+        chatPollingInterval = null;
+    }
+});
+
+async function handleMessageSubmit(event) {
+    if (event) event.preventDefault();
+
+    if (!messageInput) return;
+    const text = messageInput.value.trim();
+    if (!text || isSending) return;
+
+    messageInput.value = "";
+    await sendPatientMessageToBackend(text);
+}
+
+function setupMessageComposer() {
+    const messageForm = document.getElementById("messageForm");
+    if (messageForm && !messageForm.dataset.listenerAttached) {
+        messageForm.addEventListener("submit", handleMessageSubmit);
+        messageForm.dataset.listenerAttached = "true";
+    }
+
+    sendButton?.addEventListener(
+        "click",
+        (event) => {
+            event.preventDefault();
+            handleMessageSubmit(event);
         }
     );
 
-}
-
-
-/* =========================================================
-   52. SEND TYPED MESSAGE
-========================================================= */
-
-function sendTypedMessage() {
-
-    const message =
-        messageInput.value.trim();
-
-
-    if (!message) {
-
-        return;
-
-    }
-
-
-    messageInput.value = "";
-
-
-    switch (
-        state.currentStep
-    ) {
-
-
-        case "patient-name":
-
-            collectPatientName(
-                message
-            );
-
-            break;
-
-
-        case "patient-phone":
-
-            collectPhoneNumber(
-                message
-            );
-
-            break;
-
-
-        default:
-
-            addUserMessage(
-                message
-            );
-
-            addBotMessage(
-                "Please use one of the available options so I can assist you correctly."
-            );
-
-    }
-
+    messageInput?.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                handleMessageSubmit(event);
+            }
+        }
+    );
 }
 
 

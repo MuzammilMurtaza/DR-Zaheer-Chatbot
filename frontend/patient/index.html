@@ -205,9 +205,9 @@
 
                             <p>
 
-                                <span class="online-status"></span>
+                                <span class="online-status" id="patientOnlineStatus"></span>
 
-                                AI Appointment Assistant
+                                <span id="patientChatModeLabel">AI Assistant Active</span>
 
                             </p>
 
@@ -592,6 +592,201 @@
                         >
 
 
+                        <!-- Book Appointment -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="bookAppointment"
+                        >
+
+
+                            <span class="service-icon">
+                                📅
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Book Appointment
+                                </strong>
+
+                                <small>
+                                    Stay Young Clinic, Lahore
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Manage Appointment -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="manageAppointment"
+                        >
+
+
+                            <span class="service-icon">
+                                🗓️
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Manage Appointment
+                                </strong>
+
+                                <small>
+                                    View / Reschedule / Cancel
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Clinic Information -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="clinicInformation"
+                        >
+
+
+                            <span class="service-icon">
+                                🏥
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Clinic Information
+                                </strong>
+
+                                <small>
+                                    Lahore location, schedule & contact
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Treatment Information -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="treatmentInformation"
+                        >
+
+
+                            <span class="service-icon">
+                                🩺
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Treatment Information
+                                </strong>
+
+                                <small>
+                                    Pain, regenerative medicine,
+                                    wellness & aesthetics
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Doctor Profile -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="doctorProfile"
+                        >
+
+
+                            <span class="service-icon">
+                                👨‍⚕️
+                            </span>
+
+
+                            <span class="service-text">
+
+                                <strong>
+                                    Doctor Profile
+                                </strong>
+
+                                <small>
+                                    Consultation information
+                                </small>
+
+                            </span>
+
+
+                            <span class="service-arrow">
+                                →
+                            </span>
+
+
+                        </button>
+
+
+
+
+                        <!-- Online Consultation -->
+
+                        <button
+                            class="service-option"
+                            type="button"
+                            data-action="onlineConsultation"
+                        >
+
+
                             <span class="service-icon">
                                 💻
                             </span>
@@ -609,15 +804,11 @@
 
                             </span>
 
-
                             <span class="service-arrow">
                                 →
                             </span>
 
-
                         </button>
-
-
 
 
                         <!-- Upload Reports -->
@@ -628,11 +819,9 @@
                             data-action="uploadReports"
                         >
 
-
                             <span class="service-icon">
                                 📎
                             </span>
-
 
                             <span class="service-text">
 
@@ -646,15 +835,11 @@
 
                             </span>
 
-
                             <span class="service-arrow">
                                 →
                             </span>
 
-
                         </button>
-
-
 
 
                         <!-- Speak to Staff -->
@@ -665,11 +850,9 @@
                             data-action="speakToStaff"
                         >
 
-
                             <span class="service-icon">
                                 🎧
                             </span>
-
 
                             <span class="service-text">
 
@@ -683,34 +866,30 @@
 
                             </span>
 
-
                             <span class="service-arrow">
                                 →
                             </span>
 
-
                         </button>
-
 
                     </article>
 
 
-
-
                     <!-- =====================================
-                         DYNAMIC CHAT AREA
-
-                         JavaScript will inject:
-                         booking cards,
-                         appointment cards,
-                         report upload,
-                         profile,
-                         treatment info etc.
+                         DYNAMIC ACTION CARDS (BOOKING, ETC.)
                     ====================================== -->
-
                     <div
                         id="dynamicContent"
                         class="dynamic-content"
+                    >
+                    </div>
+
+                    <!-- =====================================
+                         PERMANENT CONVERSATION MESSAGE FEED
+                    ====================================== -->
+                    <div
+                        id="chatMessagesFeed"
+                        class="chat-messages-feed"
                     >
                     </div>
 
@@ -726,8 +905,6 @@
 
                 <footer class="chat-input-area">
 
-
-
                     <button
                         class="attach-button"
                         id="attachButton"
@@ -737,26 +914,23 @@
                         📎
                     </button>
 
+                    <form id="messageForm" style="display:flex; flex:1; align-items:center; gap:7px; min-width:0;">
+                        <input
+                            id="messageInput"
+                            type="text"
+                            placeholder="Type your message..."
+                            autocomplete="off"
+                        >
 
-
-                    <input
-                        id="messageInput"
-                        type="text"
-                        placeholder="Type your message..."
-                        autocomplete="off"
-                    >
-
-
-
-                    <button
-                        class="send-button"
-                        id="sendButton"
-                        type="button"
-                        aria-label="Send Message"
-                    >
-                        ➤
-                    </button>
-
+                        <button
+                            class="send-button"
+                            id="sendButton"
+                            type="submit"
+                            aria-label="Send Message"
+                        >
+                            ➤
+                        </button>
+                    </form>
 
                 </footer>
 
