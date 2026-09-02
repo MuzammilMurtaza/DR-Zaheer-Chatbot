@@ -414,31 +414,49 @@
                 <div class="nav-section">
 
                     <p class="nav-section-title">
-                        COMMUNICATION
+                        MARKETING & LEADS
                     </p>
 
+                    <button
+                        class="nav-item"
+                        type="button"
+                        data-page="ads-leads"
+                    >
+                        <span class="nav-icon">
+                            🎯
+                        </span>
+                        <span>
+                            Ads Leads
+                        </span>
+                        <span
+                            class="nav-count"
+                            id="leadsNavCount"
+                        >
+                            0
+                        </span>
+                    </button>
+
+                    <p class="nav-section-title">
+                        COMMUNICATION
+                    </p>
 
                     <button
                         class="nav-item"
                         type="button"
                         data-page="staff-inbox"
                     >
-
                         <span class="nav-icon">
                             💬
                         </span>
-
                         <span>
                             Staff Inbox
                         </span>
-
                         <span
                             class="nav-count"
                             id="inboxNavCount"
                         >
                             0
                         </span>
-
                     </button>
 
 
@@ -1145,21 +1163,28 @@
 
 
                             <div class="integration-item">
-
                                 <span class="integration-name">
                                     AI Assistant
                                 </span>
-
                                 <span
                                     class="integration-badge connected"
                                     id="aiStatus"
                                 >
                                     ACTIVE
                                 </span>
-
                             </div>
 
-
+                            <div class="integration-item">
+                                <span class="integration-name">
+                                    Ads Lead Automation
+                                </span>
+                                <span
+                                    class="integration-badge connected"
+                                    id="adsAutomationStatus"
+                                >
+                                    ACTIVE
+                                </span>
+                            </div>
                         </div>
 
 
@@ -1321,9 +1346,394 @@
 
 
     <!-- =====================================================
-         ADMIN JAVASCRIPT
+         ADS LEADS MODALS & UNIFIED CONVERSATION DRAWER
     ====================================================== -->
 
+    <!-- 1. Unified Lead Conversation & Control Center Modal -->
+    <div class="lead-modal-backdrop" id="leadConversationModal" style="display: none;">
+        <div class="lead-modal-content">
+            <div class="lead-modal-header">
+                <div class="lead-modal-title-group">
+                    <span class="lead-modal-badge" id="modalSourceBadge">FACEBOOK AD</span>
+                    <h3 id="modalPatientName">Patient Conversation</h3>
+                    <span class="lead-modal-id" id="modalLeadId">LEAD-0001</span>
+                </div>
+                <div class="lead-modal-actions">
+                    <button type="button" class="btn-modal-close" onclick="closeLeadModal()">✕</button>
+                </div>
+            </div>
+
+            <div class="lead-modal-body">
+                <!-- LEFT PANEL: Lead Profile & Clinic Control Center -->
+                <aside class="lead-profile-pane">
+                    <!-- Mode Switcher Banner -->
+                    <div class="lead-mode-switcher-card">
+                        <div class="mode-header">
+                            <span class="mode-label">Conversation Control</span>
+                            <span class="mode-indicator" id="modalModeIndicator">AI Active</span>
+                        </div>
+                        <p class="mode-desc" id="modalModeDesc">AI is automatically replying to patient messages.</p>
+                        <div class="mode-buttons-group">
+                            <button type="button" class="btn-mode-toggle active-ai" id="btnToggleAi" onclick="toggleCurrentLeadMode('AI')">
+                                🤖 AI Mode
+                            </button>
+                            <button type="button" class="btn-mode-toggle" id="btnToggleManual" onclick="toggleCurrentLeadMode('MANUAL')">
+                                👤 Manual Takeover
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contact & Campaign Details -->
+                    <div class="lead-section-card">
+                        <h4 class="section-title">Patient & Ad Source Info</h4>
+                        <div class="lead-info-grid">
+                            <div class="info-item">
+                                <label>Phone / WhatsApp</label>
+                                <div class="phone-link-row">
+                                    <span id="modalPhone" class="info-val">+92 300 0000000</span>
+                                    <a id="modalWaLink" href="#" target="_blank" class="btn-icon-wa" title="Open in WhatsApp">💬</a>
+                                    <a id="modalCallLink" href="#" class="btn-icon-call" title="Direct Call">📞</a>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <label>Email</label>
+                                <span id="modalEmail" class="info-val">patient@email.com</span>
+                            </div>
+                            <div class="info-item">
+                                <label>City</label>
+                                <span id="modalCity" class="info-val">Lahore</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Interested Treatment</label>
+                                <span id="modalTreatment" class="info-val font-semibold">PRP Therapy</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Campaign Name</label>
+                                <span id="modalCampaign" class="info-val">Clinic Promo</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Platform Lead ID</label>
+                                <span id="modalPlatformId" class="info-val text-muted">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lead Status & Management -->
+                    <div class="lead-section-card">
+                        <h4 class="section-title">Lead Management</h4>
+                        <div class="form-group-compact">
+                            <label for="modalLeadStatus">Lead Status</label>
+                            <select id="modalLeadStatus" class="form-select-sm" onchange="updateModalLeadStatus(this.value)">
+                                <option value="New">New</option>
+                                <option value="AI Engaged">AI Engaged</option>
+                                <option value="Qualified">Qualified</option>
+                                <option value="Appointment Requested">Appointment Requested</option>
+                                <option value="Appointment Booked">Appointment Booked</option>
+                                <option value="Follow-Up">Follow-Up</option>
+                                <option value="Not Interested">Not Interested</option>
+                                <option value="Converted">Converted</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-compact">
+                            <label for="modalPriority">Priority</label>
+                            <select id="modalPriority" class="form-select-sm" onchange="updateModalPriority(this.value)">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent 🚨</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-compact">
+                            <label for="modalAssignedTo">Assigned Staff</label>
+                            <input type="text" id="modalAssignedTo" class="form-input-sm" placeholder="e.g. Dr. Zaheer / Reception" onchange="updateModalAssigned(this.value)" />
+                        </div>
+                    </div>
+
+                    <!-- Linked Appointment Status -->
+                    <div class="lead-section-card" id="modalAppointmentSection">
+                        <h4 class="section-title">Clinic Appointment</h4>
+                        <div id="modalApptDetails" class="appt-status-box">
+                            <p class="text-muted">No appointment linked yet.</p>
+                        </div>
+                        <button type="button" class="btn-action green btn-full-width" onclick="openQuickBookModal()">
+                            📅 Book / Link Appointment
+                        </button>
+                    </div>
+
+                    <!-- Follow-up Scheduler -->
+                    <div class="lead-section-card">
+                        <h4 class="section-title">Follow-Up Schedule</h4>
+                        <div class="form-group-compact">
+                            <input type="datetime-local" id="modalFollowUpDate" class="form-input-sm" />
+                            <input type="text" id="modalFollowUpNote" class="form-input-sm" placeholder="Follow-up note..." />
+                            <button type="button" class="btn-action blue btn-full-width mt-1" onclick="saveModalFollowUp()">
+                                ⏱ Save Follow-Up
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Internal Staff Notes -->
+                    <div class="lead-section-card">
+                        <h4 class="section-title">Internal Staff Notes</h4>
+                        <textarea id="modalNotes" class="form-textarea-sm" rows="3" placeholder="Private staff notes, pain history, clinical observations..."></textarea>
+                        <button type="button" class="btn-action gray btn-full-width mt-1" onclick="saveModalNotes()">
+                            💾 Save Notes
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="lead-action-footer">
+                        <button type="button" class="btn-action green" onclick="markModalLeadConverted()">🏆 Mark Converted</button>
+                        <button type="button" class="btn-action danger" onclick="deleteModalLead()">🗑️ Delete</button>
+                    </div>
+                </aside>
+
+                <!-- RIGHT PANEL: Unified Permanent Live Conversation -->
+                <main class="lead-chat-pane">
+                    <!-- Manual Mode Active Alert Banner -->
+                    <div class="manual-mode-banner" id="modalManualBanner" style="display: none;">
+                        <div class="banner-icon">⚠️</div>
+                        <div class="banner-text">
+                            <strong>Manual Mode Active</strong>
+                            <span>AI automatic responses are paused for this lead. You can reply directly below.</span>
+                        </div>
+                        <button type="button" class="btn-resume-ai" onclick="toggleCurrentLeadMode('AI')">Resume AI 🤖</button>
+                    </div>
+
+                    <!-- Message History Container -->
+                    <div class="lead-messages-timeline" id="modalMessagesContainer">
+                        <div class="loading-spinner">Loading conversation history...</div>
+                    </div>
+
+                    <!-- Quick Response Templates -->
+                    <div class="quick-templates-bar">
+                        <span class="quick-label">⚡ Quick Templates:</span>
+                        <button type="button" class="btn-template" onclick="insertQuickTemplate('welcome')">👋 Welcome</button>
+                        <button type="button" class="btn-template" onclick="insertQuickTemplate('symptoms')">🩺 Ask Pain Details</button>
+                        <button type="button" class="btn-template" onclick="insertQuickTemplate('prp')">💉 PRP / Stem Cell Info</button>
+                        <button type="button" class="btn-template" onclick="insertQuickTemplate('location')">📍 Location & Timings</button>
+                        <button type="button" class="btn-template" onclick="insertQuickTemplate('slots')">📅 Offer Slots</button>
+                    </div>
+
+                    <!-- Chat Composer Input -->
+                    <div class="lead-composer-box">
+                        <textarea id="modalComposerInput" placeholder="Type a message to send directly to this patient... (Press Enter to send)" rows="2" onkeydown="handleComposerKey(event)"></textarea>
+                        <button type="button" class="btn-send-message" id="btnSendLeadMessage" onclick="sendModalAdminMessage()">
+                            <span>Send Reply</span> ➤
+                        </button>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Manual Lead Creation Modal -->
+    <div class="lead-modal-backdrop" id="addLeadModal" style="display: none;">
+        <div class="lead-modal-dialog-sm">
+            <div class="lead-modal-header">
+                <h3>+ Add New Lead</h3>
+                <button type="button" class="btn-modal-close" onclick="closeAddLeadModal()">✕</button>
+            </div>
+            <form id="addLeadForm" onsubmit="submitAddLeadForm(event)">
+                <div class="modal-form-body">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Patient Full Name *</label>
+                            <input type="text" id="newLeadName" required class="form-input" placeholder="e.g. Ali Ahmed" />
+                        </div>
+                        <div class="form-col">
+                            <label>Phone Number *</label>
+                            <input type="tel" id="newLeadPhone" required class="form-input" placeholder="e.g. +92 300 1234567" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Email Address</label>
+                            <input type="email" id="newLeadEmail" class="form-input" placeholder="patient@example.com" />
+                        </div>
+                        <div class="form-col">
+                            <label>City</label>
+                            <input type="text" id="newLeadCity" class="form-input" value="Lahore" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Lead Source</label>
+                            <select id="newLeadSource" class="form-select">
+                                <option value="manual_entry">Manual Entry / Phone Call</option>
+                                <option value="facebook_lead_ad">Facebook Lead Ad</option>
+                                <option value="instagram_lead_ad">Instagram Lead Ad</option>
+                                <option value="whatsapp_ad">WhatsApp Ad</option>
+                                <option value="website_chatbot">Website Chatbot</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <label>Interested Treatment</label>
+                            <select id="newLeadTreatment" class="form-select">
+                                <option value="Chronic Back & Spine Pain">Chronic Back & Spine Pain</option>
+                                <option value="Knee & Joint Osteoarthritis (PRP / Stem Cell)">Knee & Joint Osteoarthritis (PRP / Stem Cell)</option>
+                                <option value="Neck & Cervical Pain">Neck & Cervical Pain</option>
+                                <option value="Headache & Migraine Protocol">Headache & Migraine Protocol</option>
+                                <option value="Ozone & Shockwave Therapy">Ozone & Shockwave Therapy</option>
+                                <option value="Wellness / IV Vitamin Infusions">Wellness / IV Vitamin Infusions</option>
+                                <option value="Medical Aesthetics / Botox / Fillers">Medical Aesthetics / Botox / Fillers</option>
+                                <option value="General Pain Consultation">General Pain Consultation</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Initial Mode</label>
+                            <select id="newLeadMode" class="form-select">
+                                <option value="AI">AI Mode (Automated Assistant)</option>
+                                <option value="MANUAL">Manual Mode (Staff Only)</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <label>Priority</label>
+                            <select id="newLeadPriority" class="form-select">
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Patient Concern / Message</label>
+                        <textarea id="newLeadMessage" class="form-textarea" rows="2" placeholder="Patient's initial inquiry or notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-form-footer">
+                    <button type="button" class="btn-action gray" onclick="closeAddLeadModal()">Cancel</button>
+                    <button type="submit" class="btn-action green">Save & Ingest Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Test Lead & Webhook Simulator Modal -->
+    <div class="lead-modal-backdrop" id="testLeadModal" style="display: none;">
+        <div class="lead-modal-dialog-sm">
+            <div class="lead-modal-header">
+                <h3>⚡ Meta Ads & WhatsApp Lead Simulator</h3>
+                <button type="button" class="btn-modal-close" onclick="closeTestLeadModal()">✕</button>
+            </div>
+            <div class="modal-form-body">
+                <p class="text-muted mb-2">Simulate real-world Facebook Lead Ads, WhatsApp inquiries, and Instagram DMs to verify the AI multi-turn qualification and appointment booking flows.</p>
+                <div class="test-preset-buttons">
+                    <button type="button" class="btn-preset" onclick="fillTestPreset('fb_knee')">
+                        📘 FB Lead Ad: Knee Pain (PRP Interest)
+                    </button>
+                    <button type="button" class="btn-preset" onclick="fillTestPreset('ig_back')">
+                        📸 Instagram DM: Back & Sciatica Pain
+                    </button>
+                    <button type="button" class="btn-preset" onclick="fillTestPreset('wa_book')">
+                        💬 WhatsApp: Direct Appointment Booking
+                    </button>
+                    <button type="button" class="btn-preset text-danger" onclick="fillTestPreset('emergency')">
+                        🚨 Emergency Symptom Test (Chest Pain Red Flag)
+                    </button>
+                    <button type="button" class="btn-preset text-warning" onclick="fillTestPreset('human')">
+                        👤 Staff Handover Request Test
+                    </button>
+                </div>
+
+                <div class="form-row mt-2">
+                    <div class="form-col">
+                        <label>Platform / Source</label>
+                        <select id="simSource" class="form-select">
+                            <option value="facebook_lead_ad">Facebook Lead Ad</option>
+                            <option value="instagram_lead_ad">Instagram Lead Ad</option>
+                            <option value="whatsapp_ad">WhatsApp Ad / Chat</option>
+                            <option value="facebook_messenger">Facebook Messenger</option>
+                            <option value="instagram_dm">Instagram Direct Message</option>
+                        </select>
+                    </div>
+                    <div class="form-col">
+                        <label>Patient Name</label>
+                        <input type="text" id="simName" class="form-input" value="Tariq Mahmood" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col">
+                        <label>Phone Number</label>
+                        <input type="tel" id="simPhone" class="form-input" value="+923214567890" />
+                    </div>
+                    <div class="form-col">
+                        <label>Campaign Name</label>
+                        <input type="text" id="simCampaign" class="form-input" value="FB Knee Regeneration 2026" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Simulated Message Content</label>
+                    <textarea id="simMessage" class="form-textarea" rows="2">Hello Dr. Zaheer, I have severe knee osteoarthritis for 6 months. Can PRP help me avoid knee replacement surgery?</textarea>
+                </div>
+            </div>
+            <div class="modal-form-footer">
+                <button type="button" class="btn-action gray" onclick="closeTestLeadModal()">Cancel</button>
+                <button type="button" class="btn-action blue" onclick="executeTestSimulation()">🚀 Ingest & Run AI Assistant</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Quick Appointment Booking Modal for Active Lead -->
+    <div class="lead-modal-backdrop" id="leadBookingModal" style="display: none;">
+        <div class="lead-modal-dialog-sm">
+            <div class="lead-modal-header">
+                <h3>📅 Book Appointment for Lead</h3>
+                <button type="button" class="btn-modal-close" onclick="closeLeadBookingModal()">✕</button>
+            </div>
+            <form id="leadBookingForm" onsubmit="submitLeadBookingForm(event)">
+                <div class="modal-form-body">
+                    <div class="form-group">
+                        <label>Patient</label>
+                        <input type="text" id="bookPatientName" readonly class="form-input bg-readonly" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Appointment Date *</label>
+                            <input type="date" id="bookDate" required class="form-input" onchange="loadQuickSlotsForDate(this.value)" />
+                        </div>
+                        <div class="form-col">
+                            <label>Time Slot *</label>
+                            <select id="bookTimeSlot" required class="form-select">
+                                <option value="">Select date first...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Type</label>
+                            <select id="bookApptType" class="form-select">
+                                <option value="In-Person Appointment">In-Person Appointment</option>
+                                <option value="Online Appointment">Online Appointment</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <label>Clinic</label>
+                            <input type="text" id="bookClinic" class="form-input bg-readonly" value="Stay Young Clinic" readonly />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <input type="text" id="bookNotes" class="form-input" placeholder="Specific symptoms or referral notes..." />
+                    </div>
+                </div>
+                <div class="modal-form-footer">
+                    <button type="button" class="btn-action gray" onclick="closeLeadBookingModal()">Cancel</button>
+                    <button type="submit" class="btn-action green">Confirm & Generate Token</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         ADMIN JAVASCRIPT
+    ====================================================== -->
     <script src="admin.js"></script>
 
 

@@ -1048,7 +1048,7 @@ async function showAppointmentTimes() {
     ];
 
     try {
-        const res = await fetch(`http://localhost:5000/api/appointments/slots?date=${state.booking.date}`);
+        const res = await fetch(`/api/appointments/slots?date=${state.booking.date}`);
         const json = await res.json();
         if (json.success && json.data && Array.isArray(json.data.slots)) {
             timeSlots = json.data.slots;
@@ -1236,7 +1236,7 @@ async function confirmAppointment(btnEvent) {
     }
 
     try {
-        const response = await fetch("http://localhost:5000/api/appointments", {
+        const response = await fetch("/api/appointments", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2107,7 +2107,7 @@ async function submitReportUpload() {
     formData.append("reportFile", state.report.file);
 
     try {
-        const response = await fetch("http://localhost:5000/api/reports", {
+        const response = await fetch("/api/reports", {
             method: "POST",
             body: formData
         });
