@@ -725,6 +725,11 @@ input, select, textarea {
     color: var(--color-red);
 }
 
+.status-badge.rescheduled {
+    background: #DBEAFE;
+    color: #1D4ED8;
+}
+
 .action-btn-group {
     display: flex;
     align-items: center;

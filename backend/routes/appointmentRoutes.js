@@ -5,6 +5,8 @@ const {
     createAppointment,
     getAppointments,
     searchAppointments,
+    confirmAppointment,
+    cancelAppointment,
     updateAppointmentStatus,
     rescheduleAppointment
 } = require('../controllers/appointmentController');
@@ -15,6 +17,8 @@ router.get('/slots', getAvailableSlots);
 router.post('/', validateBookingInput, createAppointment);
 router.get('/', getAppointments);
 router.get('/search', searchAppointments);
+router.patch('/:id/confirm', confirmAppointment);
+router.patch('/:id/cancel', cancelAppointment);
 router.patch('/:id/status', updateAppointmentStatus);
 router.patch('/:id/reschedule', rescheduleAppointment);
 

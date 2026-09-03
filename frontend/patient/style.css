@@ -1639,4 +1639,125 @@ button {
         min-height: 53px;
     }
 
-} 
+}
+
+/* =========================================================
+   MANAGE APPOINTMENT ACTION BUTTONS & STATUS BADGES
+========================================================= */
+
+.chat-btn-cancel,
+.danger-action {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    margin-top: 8px;
+    border-radius: var(--radius-small);
+    border: none;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2);
+}
+
+.chat-btn-cancel:hover,
+.danger-action:hover {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.chat-btn-confirm,
+.confirm-action {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    margin-top: 8px;
+    border-radius: var(--radius-small);
+    border: none;
+    background: #10b981 !important;
+    color: #ffffff !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+}
+
+.chat-btn-confirm:hover,
+.confirm-action:hover {
+    background: #059669 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.chat-btn-reschedule,
+.reschedule-action {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    margin-top: 8px;
+    border-radius: var(--radius-small);
+    border: none;
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+}
+
+.chat-btn-reschedule:hover,
+.reschedule-action:hover {
+    background: #1d4ed8 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.confirmed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.status-badge.pending {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.status-badge.cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.status-badge.rescheduled {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+ 

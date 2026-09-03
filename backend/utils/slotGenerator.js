@@ -75,15 +75,18 @@ const generateSlotsForDate = async ({
         try {
             const booked = await AppointmentModel.find({
                 date: dateStr,
-                status: { $nin: ['cancelled'] }
+                status: { $nin: ['cancelled', 'Cancelled'] }
             });
-            bookedTimes = booked.map(a => a.time);
+            bookedTimes = booked.map(a => (a.time || '').replace(/^0/, '').trim());
         } catch (e) {}
     }
 
-    const availableSlots = candidateSlots.filter(
-        slot => !blockedTimes.includes(slot) && !bookedTimes.includes(slot)
-    );
+    const blockedNormalized = blockedTimes.map(t => (t || '').replace(/^0/, '').trim());
+
+    const availableSlots = candidateSlots.filter(slot => {
+        const norm = (slot || '').replace(/^0/, '').trim();
+        return !blockedNormalized.includes(norm) && !bookedTimes.includes(norm);
+    });
 
     return {
         available: availableSlots.length > 0,

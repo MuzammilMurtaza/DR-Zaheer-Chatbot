@@ -48,6 +48,8 @@ let chatInitialized = false;
 let chatPollingInterval = null;
 let isSyncing = false;
 let isSending = false;
+let isLanguageSelecting = false;
+let isUploading = false;
 let lastSequence = 0;
 
 const state = {
@@ -195,32 +197,41 @@ function setupLanguageButtons() {
         document.querySelectorAll("[data-language]");
 
     buttons.forEach((button) => {
+        if (button.dataset.listenerAttached) return;
+        button.dataset.listenerAttached = "true";
 
         button.addEventListener("click", () => {
+            if (isLanguageSelecting) return;
+
+            // Immediately disable language buttons to prevent rapid double-clicks
+            buttons.forEach(b => {
+                b.disabled = true;
+                b.style.pointerEvents = "none";
+                b.style.opacity = "0.7";
+            });
 
             const selectedLanguage =
                 button.dataset.language;
 
             selectLanguage(selectedLanguage);
-
         });
 
     });
 
 
-    languageButton.addEventListener("click", () => {
+    if (languageButton && !languageButton.dataset.listenerAttached) {
+        languageButton.dataset.listenerAttached = "true";
 
-        if (state.language === "english") {
+        languageButton.addEventListener("click", () => {
+            if (isLanguageSelecting) return;
 
-            selectLanguage("urdu");
-
-        } else {
-
-            selectLanguage("english");
-
-        }
-
-    });
+            if (state.language === "english") {
+                selectLanguage("urdu");
+            } else {
+                selectLanguage("english");
+            }
+        });
+    }
 
 }
 
@@ -229,19 +240,26 @@ function setupLanguageButtons() {
    6. SELECT LANGUAGE
 ========================================================= */
 
-function selectLanguage(language) {
+async function selectLanguage(language) {
+
+    if (isLanguageSelecting) return;
+    isLanguageSelecting = true;
 
     state.language = language;
 
     if (welcomeCard) welcomeCard.classList.add("hidden");
     if (mainMenu) mainMenu.classList.remove("hidden");
 
-    if (language === "urdu") {
-        languageButton.textContent = "🌐 English";
-        sendPatientMessageToBackend("اردو", "LANG_URDU");
-    } else {
-        languageButton.textContent = "🌐 اردو";
-        sendPatientMessageToBackend("English", "LANG_ENGLISH");
+    try {
+        if (language === "urdu") {
+            if (languageButton) languageButton.textContent = "🌐 English";
+            await sendPatientMessageToBackend("اردو", "LANG_URDU");
+        } else {
+            if (languageButton) languageButton.textContent = "🌐 اردو";
+            await sendPatientMessageToBackend("English", "LANG_ENGLISH");
+        }
+    } finally {
+        isLanguageSelecting = false;
     }
 
 }
@@ -255,9 +273,11 @@ function showMainMenu() {
 
     clearDynamicContent();
 
+    state.currentFlow = "mainMenu";
     state.currentStep = "main-menu";
 
-    mainMenu.classList.remove("hidden");
+    if (welcomeCard) welcomeCard.classList.add("hidden");
+    if (mainMenu) mainMenu.classList.remove("hidden");
 
     scrollChatToBottom();
 
@@ -270,7 +290,7 @@ function showMainMenu() {
 
 function hideMainMenu() {
 
-    mainMenu.classList.add("hidden");
+    if (mainMenu) mainMenu.classList.add("hidden");
 
 }
 
@@ -281,21 +301,19 @@ function hideMainMenu() {
 
 function setupMenuButtons() {
 
-    const serviceButtons =
-        document.querySelectorAll(".service-option");
+    if (mainMenu && !mainMenu.dataset.listenerAttached) {
+        mainMenu.dataset.listenerAttached = "true";
 
-    serviceButtons.forEach((button) => {
+        mainMenu.addEventListener("click", (event) => {
+            const button = event.target.closest(".service-option");
+            if (!button) return;
 
-        button.addEventListener("click", () => {
-
-            const action =
-                button.dataset.action;
-
-            handleMenuAction(action);
-
+            const action = button.dataset.action;
+            if (action) {
+                handleMenuAction(action);
+            }
         });
-
-    });
+    }
 
 }
 
@@ -329,11 +347,11 @@ function handleMenuAction(action) {
             break;
 
         case "manageAppointment":
-            sendPatientMessageToBackend("🗓️ Manage My Appointment");
+            showManageAppointmentSearchStep();
             break;
 
         case "uploadReports":
-            sendPatientMessageToBackend("📎 Upload Medical Reports");
+            startReportUpload();
             break;
 
         case "speakToStaff":
@@ -1512,127 +1530,728 @@ function resetBooking() {
 
 
 /* =========================================================
-   38. MANAGE APPOINTMENT
+   38. MANAGE APPOINTMENT (STEP-BY-STEP FLOW)
 ========================================================= */
 
 function showManageAppointment() {
-
-    state.currentStep =
-        "manage-appointment";
-
-
-    const card =
-        createChatCard(
-
-            "Manage Appointment",
-
-            `
-
-                <p>
-                    Enter your appointment ID,
-                    token number or registered
-                    phone number.
-                </p>
-
-            `
-        );
-
-
-    const input =
-        document.createElement("input");
-
-
-    input.type =
-        "text";
-
-    input.className =
-        "manage-search-input";
-
-    input.placeholder =
-        "Appointment ID / Token / Phone";
-
-
-    input.style.width =
-        "100%";
-
-    input.style.height =
-        "40px";
-
-    input.style.marginTop =
-        "8px";
-
-    input.style.padding =
-        "0 10px";
-
-    input.style.border =
-        "1px solid #DCE7E3";
-
-    input.style.borderRadius =
-        "10px";
-
-
-    card.appendChild(input);
-
-
-    const searchButton =
-        createActionButton(
-
-            "Search Appointment",
-
-            () => {
-
-                searchAppointment(
-                    input.value
-                );
-
-            }
-
-        );
-
-
-    card.appendChild(
-        searchButton
-    );
-
-
-    card.appendChild(
-
-        createActionButton(
-
-            "🏠 Main Menu",
-
-            showMainMenu
-
-        )
-
-    );
-
+    showManageAppointmentSearchStep();
 }
 
 
 /* =========================================================
-   39. SEARCH APPOINTMENT
-
-   Backend implementation comes later.
+   39. STEP 1: SEARCH APPOINTMENT
 ========================================================= */
 
-function searchAppointment(query) {
+function showManageAppointmentSearchStep() {
+    state.currentFlow = "manageAppointmentSearch";
+    state.currentStep = "manage-appointment-search";
+    hideMainMenu();
+    clearDynamicContent();
 
-    if (!query.trim()) {
+    const prefilled = state.booking.token || state.booking.appointmentId || state.booking.phone || "";
 
-        showToast(
-            "Please enter appointment information."
-        );
-
-        return;
-
-    }
-
-
-    addBotMessage(
-        "Appointment search will connect to the clinic database in the backend step."
+    const card = createChatCard(
+        "🔍 Search Appointment",
+        `
+            <p style="color:#475569; font-size:13px; line-height:1.6; margin-bottom:12px;">
+                Please enter your Token Number, Appointment ID, or registered phone number to search your appointment.
+            </p>
+            <form class="chat-form" id="manageSearchForm" onsubmit="return false;" style="margin-top:8px;">
+                <input type="text" id="manageSearchQueryInput" value="${prefilled}" placeholder="Enter Token Number / Appointment ID / Phone" required style="width:100%; height:40px; border:1px solid #cbd5e1; border-radius:10px; padding:0 12px; font-size:13px; margin-bottom:10px;">
+            </form>
+        `
     );
 
+    // Primary Search Button
+    card.appendChild(
+        createActionButton(
+            "🔍 Search Appointment",
+            () => {
+                const queryInput = document.getElementById("manageSearchQueryInput");
+                const query = queryInput ? queryInput.value.trim() : "";
+                if (!query) {
+                    showToast("Please enter a Token Number, Appointment ID, or Phone Number.");
+                    queryInput?.focus();
+                    return;
+                }
+                executeAppointmentSearch(query);
+            },
+            "primary-action"
+        )
+    );
+
+    // Main Menu Button
+    card.appendChild(
+        createActionButton(
+            "🏠 Main Menu",
+            showMainMenu
+        )
+    );
+
+    // Enable Enter key submission inside input
+    setTimeout(() => {
+        const queryInput = document.getElementById("manageSearchQueryInput");
+        if (queryInput) {
+            queryInput.focus();
+            queryInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    const query = queryInput.value.trim();
+                    if (!query) {
+                        showToast("Please enter a Token Number, Appointment ID, or Phone Number.");
+                        return;
+                    }
+                    executeAppointmentSearch(query);
+                }
+            });
+        }
+    }, 100);
+
+    scrollChatToBottom();
+}
+
+async function executeAppointmentSearch(query) {
+    addUserMessage(`🔍 Search: ${query}`);
+    showToast("Searching clinic records...");
+
+    try {
+        const res = await fetch(`/api/appointments/search?query=${encodeURIComponent(query)}`);
+        const json = await res.json();
+
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            if (json.data.length === 1) {
+                const appointment = json.data[0];
+                state.managedAppointment = appointment;
+                renderAppointmentFoundCard(appointment);
+            } else {
+                renderMultipleAppointmentsCard(json.data);
+            }
+        } else {
+            renderAppointmentNotFoundCard(query);
+        }
+    } catch (e) {
+        console.error("Search error:", e);
+        renderAppointmentNotFoundCard(query);
+    }
+}
+
+function renderMultipleAppointmentsCard(appointments) {
+    clearDynamicContent();
+
+    addBotMessage(`📋 Found ${appointments.length} appointments for your search. Please choose which appointment you would like to manage.`);
+
+    const card = createChatCard(
+        `📋 ${appointments.length} Appointments Found`,
+        `
+            <p style="color:#475569; font-size:13px; line-height:1.6; margin-bottom:12px;">
+                Multiple appointments were found. Please select which appointment you would like to manage:
+            </p>
+        `
+    );
+
+    appointments.forEach((appt) => {
+        const statusUpper = (appt.status || "CONFIRMED").toUpperCase();
+        card.appendChild(
+            createActionButton(
+                `Token #${appt.tokenNumber} | ${appt.date} (${appt.time}) - ${statusUpper}`,
+                () => {
+                    state.managedAppointment = appt;
+                    renderAppointmentFoundCard(appt);
+                }
+            )
+        );
+    });
+
+    card.appendChild(
+        createActionButton(
+            "🏠 Main Menu",
+            showMainMenu
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+function renderAppointmentNotFoundCard(query) {
+    clearDynamicContent();
+
+    addBotMessage(`❌ No appointment found.\n\nPlease check your Token Number, Appointment ID, or phone number and try again.`);
+
+    const card = createChatCard(
+        "❌ No Appointment Found",
+        `
+            <p style="color:#475569; font-size:13px; line-height:1.6; margin-bottom:10px;">
+                No appointment record was found matching <strong>${query}</strong>.
+            </p>
+            <p style="color:#64748b; font-size:12px; line-height:1.5; margin-bottom:12px;">
+                Please check your Token Number, Appointment ID, or registered phone number and try again.
+            </p>
+        `
+    );
+
+    card.appendChild(
+        createActionButton(
+            "🔍 Try Searching Again",
+            showManageAppointmentSearchStep,
+            "primary-action"
+        )
+    );
+
+    card.appendChild(
+        createActionButton(
+            "🏠 Main Menu",
+            showMainMenu
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+function renderAppointmentFoundCard(appt) {
+    clearDynamicContent();
+
+    const statusUpper = (appt.status || "CONFIRMED").toUpperCase();
+    const statusClass = (appt.status || "confirmed").toLowerCase();
+
+    addBotMessage(`✅ Appointment Found!\n\nPatient Name: ${appt.patientName}\nAppointment ID: ${appt.appointmentId}\nToken Number: #${appt.tokenNumber}\nDoctor: Dr. Muhammad Zaheer Anjum\nDate: ${appt.date}\nTime: ${appt.time}\nStatus: ${statusUpper}`);
+
+    const card = createChatCard(
+        "✅ Appointment Found",
+        `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:12px; font-size:13px; line-height:1.7;">
+                <p><strong>Patient Name:</strong> ${appt.patientName}</p>
+                <p><strong>Appointment ID:</strong> <code>${appt.appointmentId}</code></p>
+                <p><strong>Token Number:</strong> <strong>#${appt.tokenNumber}</strong></p>
+                <p><strong>Doctor:</strong> Dr. Muhammad Zaheer Anjum</p>
+                <p><strong>Appointment Date:</strong> ${appt.date}</p>
+                <p><strong>Appointment Time:</strong> ${appt.time}</p>
+                <p><strong>Appointment Type:</strong> ${appt.appointmentType || "In-Person Appointment"}</p>
+                <p><strong>Appointment Status:</strong> <span class="status-badge ${statusClass}">${statusUpper}</span></p>
+            </div>
+            <p style="font-weight:600; margin-bottom:8px; font-size:13px; color:#334155;">What would you like to do?</p>
+        `
+    );
+
+    // 1. ❌ Cancel Appointment (Red button)
+    card.appendChild(
+        createActionButton(
+            "❌ Cancel Appointment",
+            () => showCancelConfirmation(appt),
+            "chat-btn-cancel"
+        )
+    );
+
+    // 2. ✅ Confirm Booking (Green button)
+    card.appendChild(
+        createActionButton(
+            "✅ Confirm Booking",
+            () => showConfirmBookingStep(appt),
+            "chat-btn-confirm"
+        )
+    );
+
+    // 3. 🔄 Reschedule Appointment (Blue button)
+    card.appendChild(
+        createActionButton(
+            "🔄 Reschedule Appointment",
+            () => showRescheduleStep1(appt),
+            "chat-btn-reschedule"
+        )
+    );
+
+    // Main Menu navigation
+    card.appendChild(
+        createActionButton(
+            "🏠 Main Menu",
+            showMainMenu
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+
+/* =========================================================
+   39B. OPTION 1: CANCEL APPOINTMENT
+========================================================= */
+
+function showCancelConfirmation(appt) {
+    if ((appt.status || "").toLowerCase() === "cancelled") {
+        clearDynamicContent();
+        const card = createChatCard(
+            "ℹ️ Appointment Already Cancelled",
+            `
+                <p style="color:#475569; font-size:13px; line-height:1.6; margin-bottom:12px;">
+                    This appointment (ID: <strong>${appt.appointmentId}</strong>, Token #${appt.tokenNumber}) is already cancelled.
+                </p>
+            `
+        );
+        card.appendChild(createActionButton("📅 Book New Appointment", () => sendPatientMessageToBackend("📅 Book Appointment", "BOOK_APPOINTMENT"), "chat-btn-confirm"));
+        card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
+        scrollChatToBottom();
+        return;
+    }
+
+    clearDynamicContent();
+
+    const card = createChatCard(
+        "Cancel Appointment",
+        `
+            <p style="font-weight:600; color:#b91c1c; margin-bottom:10px; font-size:13px;">
+                Are you sure you want to cancel this appointment?
+            </p>
+            <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                <p><strong>Patient:</strong> ${appt.patientName}</p>
+                <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                <p><strong>Date & Time:</strong> ${appt.date} at ${appt.time}</p>
+            </div>
+        `
+    );
+
+    card.appendChild(
+        createActionButton(
+            "YES - Cancel Appointment",
+            () => executeAppointmentCancellation(appt),
+            "chat-btn-cancel"
+        )
+    );
+
+    card.appendChild(
+        createActionButton(
+            "NO - Keep Appointment",
+            () => renderAppointmentFoundCard(appt)
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+async function executeAppointmentCancellation(appt) {
+    showToast("Cancelling appointment...");
+    try {
+        const targetId = appt.appointmentId || appt._id;
+        const res = await fetch(`/api/appointments/${targetId}/cancel`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: "Patient Request" })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            appt.status = "cancelled";
+            clearDynamicContent();
+
+            addBotMessage(`❌ Your appointment has been cancelled successfully.\n\nAppointment Details:\nAppointment ID: ${appt.appointmentId}\nToken Number: #${appt.tokenNumber}\nDate: ${appt.date}\nTime: ${appt.time}`);
+
+            const card = createChatCard(
+                "❌ Appointment Cancelled",
+                `
+                    <p style="color:#b91c1c; font-weight:600; margin-bottom:10px; font-size:13px;">
+                        ❌ Your appointment has been cancelled successfully.
+                    </p>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                        <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                        <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                        <p><strong>Date:</strong> ${appt.date}</p>
+                        <p><strong>Time:</strong> ${appt.time}</p>
+                    </div>
+                    <p style="font-size:12px; color:#64748b; margin-bottom:12px;">The appointment slot has been released back to clinic availability.</p>
+                `
+            );
+
+            card.appendChild(createActionButton("📅 Book New Appointment", () => sendPatientMessageToBackend("📅 Book Appointment", "BOOK_APPOINTMENT"), "chat-btn-confirm"));
+            card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
+
+            showToast("Appointment Cancelled & Slot Released");
+            scrollChatToBottom();
+        } else {
+            showToast(json.message || "Unable to cancel appointment.");
+        }
+    } catch (e) {
+        console.error("Cancel error:", e);
+        showToast("Unable to cancel appointment. Please check connection.");
+    }
+}
+
+
+/* =========================================================
+   39C. OPTION 2: CONFIRM BOOKING
+========================================================= */
+
+function showConfirmBookingStep(appt) {
+    const currentStatus = (appt.status || "").toLowerCase();
+
+    // If appointment is already confirmed:
+    if (currentStatus === "confirmed") {
+        clearDynamicContent();
+        addBotMessage("✅ Your appointment is already confirmed.");
+
+        const card = createChatCard(
+            "✅ Appointment Already Confirmed",
+            `
+                <p style="color:#166534; font-size:13px; line-height:1.6; margin-bottom:12px; font-weight:600;">
+                    ✅ Your appointment is already confirmed.
+                </p>
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                    <p><strong>Patient:</strong> ${appt.patientName}</p>
+                    <p><strong>Doctor:</strong> Dr. Muhammad Zaheer Anjum</p>
+                    <p><strong>Date:</strong> ${appt.date}</p>
+                    <p><strong>Time:</strong> ${appt.time}</p>
+                    <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                    <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                </div>
+            `
+        );
+        card.appendChild(createActionButton("❌ Cancel Appointment", () => showCancelConfirmation(appt), "chat-btn-cancel"));
+        card.appendChild(createActionButton("🔄 Reschedule Appointment", () => showRescheduleStep1(appt), "chat-btn-reschedule"));
+        card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
+        scrollChatToBottom();
+        return;
+    }
+
+    clearDynamicContent();
+
+    const card = createChatCard(
+        "Confirm Booking",
+        `
+            <p style="font-weight:600; margin-bottom:10px; font-size:13px;">Appointment Details:</p>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                <p><strong>Patient:</strong> ${appt.patientName}</p>
+                <p><strong>Doctor:</strong> Dr. Muhammad Zaheer Anjum</p>
+                <p><strong>Date:</strong> ${appt.date}</p>
+                <p><strong>Time:</strong> ${appt.time}</p>
+                <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+            </div>
+            <p style="font-weight:600; color:#0f766e; font-size:13px; margin-bottom:12px;">Do you want to confirm this appointment?</p>
+        `
+    );
+
+    card.appendChild(
+        createActionButton(
+            "✅ Confirm Appointment",
+            () => executeAppointmentConfirmation(appt),
+            "chat-btn-confirm"
+        )
+    );
+
+    card.appendChild(
+        createActionButton(
+            "Cancel",
+            () => renderAppointmentFoundCard(appt)
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+async function executeAppointmentConfirmation(appt) {
+    showToast("Confirming appointment...");
+    try {
+        const targetId = appt.appointmentId || appt._id;
+        const res = await fetch(`/api/appointments/${targetId}/confirm`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" }
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            appt.status = "confirmed";
+            clearDynamicContent();
+
+            addBotMessage(`✅ Your appointment has been confirmed successfully.\n\nAppointment Details:\nPatient: ${appt.patientName}\nDoctor: Dr. Muhammad Zaheer Anjum\nDate: ${appt.date}\nTime: ${appt.time}\nToken Number: #${appt.tokenNumber}\nAppointment ID: ${appt.appointmentId}`);
+
+            const card = createChatCard(
+                "✅ Appointment Confirmed",
+                `
+                    <p style="color:#0f766e; font-weight:600; margin-bottom:10px; font-size:13px;">
+                        ✅ Your appointment has been confirmed successfully.
+                    </p>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                        <p><strong>Patient:</strong> ${appt.patientName}</p>
+                        <p><strong>Doctor:</strong> Dr. Muhammad Zaheer Anjum</p>
+                        <p><strong>Date:</strong> ${appt.date}</p>
+                        <p><strong>Time:</strong> ${appt.time}</p>
+                        <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                        <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                    </div>
+                `
+            );
+
+            card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
+
+            showToast("Appointment Confirmed & Saved");
+            scrollChatToBottom();
+        } else {
+            showToast(json.message || "Unable to confirm appointment.");
+        }
+    } catch (e) {
+        console.error("Confirm error:", e);
+        showToast("Unable to confirm appointment. Please check connection.");
+    }
+}
+
+
+/* =========================================================
+   39D. OPTION 3: RESCHEDULE APPOINTMENT
+========================================================= */
+
+function showRescheduleStep1(appt) {
+    clearDynamicContent();
+
+    addBotMessage(`🔄 Reschedule Appointment\n\nCurrent Appointment:\n• Appointment ID: ${appt.appointmentId}\n• Token Number: #${appt.tokenNumber}\n• Current Date: ${appt.date}\n• Current Time: ${appt.time}\n\nPlease select your new preferred appointment date.`);
+
+    const card = createChatCard(
+        "🔄 Reschedule Appointment",
+        `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:12px; font-size:13px; line-height:1.7;">
+                <p><strong>Appointment ID:</strong> <code>${appt.appointmentId}</code></p>
+                <p><strong>Token Number:</strong> <strong>#${appt.tokenNumber}</strong></p>
+                <p><strong>Current Date:</strong> ${appt.date}</p>
+                <p><strong>Current Time:</strong> ${appt.time}</p>
+            </div>
+            <p style="font-weight:600; color:#1e293b; margin-bottom:8px; font-size:13px;">
+                Please select your new preferred appointment date:
+            </p>
+        `
+    );
+
+    const dates = generateAvailableDates();
+
+    dates.forEach((date) => {
+        card.appendChild(
+            createActionButton(
+                `📅 ${date.label}`,
+                () => showRescheduleTimes(appt, date.value, date.label)
+            )
+        );
+    });
+
+    card.appendChild(
+        createActionButton(
+            "Cancel",
+            () => renderAppointmentFoundCard(appt)
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+async function showRescheduleTimes(appt, dateValue, dateLabel) {
+    clearDynamicContent();
+
+    addUserMessage(`📅 ${dateLabel}`);
+    addBotMessage(`Please select an available consultation time slot for ${dateLabel}.`);
+
+    const card = createChatCard(
+        "Select New Time Slot",
+        `
+            <p style="font-size:13px; color:#475569; margin-bottom:12px;">
+                Selected Date: <strong>${dateLabel}</strong> (${dateValue})<br>
+                Please select your preferred time slot:
+            </p>
+        `
+    );
+
+    let timeSlots = [
+        "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
+        "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+        "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM",
+        "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM"
+    ];
+
+    try {
+        const res = await fetch(`/api/appointments/slots?date=${dateValue}`);
+        const json = await res.json();
+        if (json.success && json.data && Array.isArray(json.data.slots)) {
+            timeSlots = json.data.slots;
+        }
+    } catch (e) {
+        console.warn("Using fallback slot generator");
+    }
+
+    if (timeSlots.length === 0) {
+        const p = document.createElement("p");
+        p.style.color = "#dc2626";
+        p.style.fontSize = "13px";
+        p.style.fontWeight = "600";
+        p.textContent = "No available slots for this date. Please select another date.";
+        card.appendChild(p);
+
+        card.appendChild(
+            createActionButton(
+                "📅 Choose Another Date",
+                () => showRescheduleStep1(appt),
+                "chat-btn-reschedule"
+            )
+        );
+        card.appendChild(
+            createActionButton(
+                "Cancel",
+                () => renderAppointmentFoundCard(appt)
+            )
+        );
+        scrollChatToBottom();
+        return;
+    }
+
+    timeSlots.forEach((time) => {
+        card.appendChild(
+            createActionButton(
+                `🕒 ${time}`,
+                () => showRescheduleConfirmation(appt, dateValue, time, dateLabel)
+            )
+        );
+    });
+
+    card.appendChild(
+        createActionButton(
+            "⬅️ Back to Date Selection",
+            () => showRescheduleStep1(appt)
+        )
+    );
+
+    card.appendChild(
+        createActionButton(
+            "Cancel",
+            () => renderAppointmentFoundCard(appt)
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+function showRescheduleConfirmation(appt, newDate, newTime, dateLabel) {
+    clearDynamicContent();
+
+    addUserMessage(`🕒 ${newTime}`);
+
+    const card = createChatCard(
+        "Confirm Reschedule",
+        `
+            <p style="font-weight:600; color:#1e3a8a; margin-bottom:10px; font-size:13px;">
+                Do you want to reschedule your appointment to:
+            </p>
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                <p><strong>Patient Name:</strong> ${appt.patientName}</p>
+                <p><strong>New Date:</strong> ${newDate} ${dateLabel ? `(${dateLabel})` : ''}</p>
+                <p><strong>New Time:</strong> ${newTime}</p>
+            </div>
+        `
+    );
+
+    card.appendChild(
+        createActionButton(
+            "Confirm Reschedule",
+            () => executeReschedule(appt, newDate, newTime, dateLabel),
+            "chat-btn-reschedule"
+        )
+    );
+
+    card.appendChild(
+        createActionButton(
+            "Cancel",
+            () => renderAppointmentFoundCard(appt)
+        )
+    );
+
+    scrollChatToBottom();
+}
+
+async function executeReschedule(appt, newDate, newTime, dateLabel) {
+    showToast("Rescheduling appointment...");
+    try {
+        const targetId = appt.appointmentId || appt._id;
+        const res = await fetch(`/api/appointments/${targetId}/reschedule`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                date: newDate,
+                time: newTime
+            })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            appt.date = newDate;
+            appt.time = newTime;
+            appt.status = "confirmed";
+            if (json.data && json.data.rescheduledAt) {
+                appt.rescheduledAt = json.data.rescheduledAt;
+            }
+
+            clearDynamicContent();
+
+            addBotMessage(`✅ Your appointment has been rescheduled successfully.\n\nNew Appointment Details:\nAppointment ID: ${appt.appointmentId}\nToken Number: #${appt.tokenNumber}\nNew Date: ${newDate}\nNew Time: ${newTime}`);
+
+            const card = createChatCard(
+                "✅ Appointment Rescheduled",
+                `
+                    <p style="color:#1e40af; font-weight:600; margin-bottom:10px; font-size:13px;">
+                        ✅ Your appointment has been rescheduled successfully.
+                    </p>
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px; font-size:13px; line-height:1.7; margin-bottom:12px;">
+                        <p><strong>Appointment ID:</strong> ${appt.appointmentId}</p>
+                        <p><strong>Token Number:</strong> #${appt.tokenNumber}</p>
+                        <p><strong>New Date:</strong> ${newDate}</p>
+                        <p><strong>New Time:</strong> ${newTime}</p>
+                    </div>
+                `
+            );
+
+            card.appendChild(
+                createActionButton(
+                    "📋 View Appointment",
+                    () => renderAppointmentFoundCard(appt),
+                    "chat-btn-reschedule"
+                )
+            );
+
+            card.appendChild(
+                createActionButton(
+                    "🏠 Main Menu",
+                    showMainMenu
+                )
+            );
+
+            showToast("Appointment Rescheduled Successfully");
+            scrollChatToBottom();
+        } else {
+            const errorMsg = json.message || "Selected time slot is not available. Please choose another slot.";
+            showToast(errorMsg);
+            addBotMessage(`⚠️ ${errorMsg}`);
+
+            clearDynamicContent();
+            const card = createChatCard(
+                "⚠️ Slot Unavailable",
+                `
+                    <p style="color:#b91c1c; font-weight:600; margin-bottom:10px; font-size:13px;">
+                        ${errorMsg}
+                    </p>
+                `
+            );
+            card.appendChild(
+                createActionButton(
+                    "🔄 Try Another Date or Time",
+                    () => showRescheduleStep1(appt),
+                    "chat-btn-reschedule"
+                )
+            );
+            card.appendChild(
+                createActionButton(
+                    "Cancel",
+                    () => renderAppointmentFoundCard(appt)
+                )
+            );
+            scrollChatToBottom();
+        }
+    } catch (e) {
+        console.error("Reschedule error:", e);
+        showToast("Unable to reschedule. Please check connection.");
+    }
 }
 
 
@@ -1932,78 +2551,11 @@ function startOnlineConsultation() {
 
 function startReportUpload() {
 
-    state.currentStep =
-        "report-type";
+    showReportUploadForm();
 
-
-    const card =
-        createChatCard(
-
-            "Upload Medical Report",
-
-            `
-
-                <p>
-                    Please select the type
-                    of medical report you
-                    would like to upload.
-                </p>
-
-            `
-        );
-
-
-    const reportTypes = [
-
-        "MRI Scan",
-
-        "X-Ray",
-
-        "Prescription",
-
-        "Laboratory Report",
-
-        "Discharge Summary",
-
-        "Other Report"
-
-    ];
-
-
-    reportTypes.forEach((type) => {
-
-        card.appendChild(
-
-            createActionButton(
-
-                type,
-
-                () => {
-
-                    selectReportType(
-                        type
-                    );
-
-                }
-
-            )
-
-        );
-
-    });
-
-
-    card.appendChild(
-
-        createActionButton(
-
-            "🏠 Main Menu",
-
-            showMainMenu
-
-        )
-
-    );
+    if (medicalFileInput) {
+        medicalFileInput.click();
+    }
 
 }
 
@@ -2019,7 +2571,7 @@ function selectReportType(type) {
 
     addUserMessage(type);
 
-    showReportUploadForm();
+    showReportUploadForm(type);
 
 }
 
@@ -2028,10 +2580,36 @@ function selectReportType(type) {
    46. REPORT UPLOAD FORM
 ========================================================= */
 
-function showReportUploadForm() {
+function showReportUploadForm(selectedType) {
 
     clearDynamicContent();
 
+    state.currentStep = "report-upload";
+    if (selectedType) {
+        state.report.type = selectedType;
+    } else if (!state.report.type) {
+        state.report.type = "MRI Scan";
+    }
+
+    const defaultPhone = state.report.phone || state.booking.phone || "";
+    const defaultToken = state.report.token || state.booking.token || "";
+    const defaultApptId = state.booking.appointmentId || "";
+    const currentFileName = state.report.file
+        ? `Selected: ${state.report.file.name} (${(state.report.file.size / 1024).toFixed(1)} KB)`
+        : "No file selected";
+
+    const reportOptions = [
+        "MRI Scan",
+        "X-Ray",
+        "Prescription",
+        "Laboratory Report",
+        "Discharge Summary",
+        "Other Report"
+    ];
+
+    const categoryOptionsHtml = reportOptions.map(opt => `
+        <option value="${opt}" ${state.report.type === opt ? 'selected' : ''}>${opt}</option>
+    `).join("");
 
     const card =
         createChatCard(
@@ -2039,72 +2617,121 @@ function showReportUploadForm() {
             "Upload Medical Report",
 
             `
+                <form class="chat-form" id="reportForm" onsubmit="return false;">
+                    <label>Report Category</label>
+                    <select id="reportCategorySelect" style="width:100%; height:40px; border:1px solid #DCE7E3; border-radius:10px; padding:0 10px; margin-bottom:12px; background:#fff; font-size:14px; font-family:inherit;">
+                        ${categoryOptionsHtml}
+                    </select>
 
-                <form class="chat-form" id="reportForm">
-                    <label>Patient Phone Number</label>
-                    <input type="text" id="reportPhone" placeholder="03001234567" required>
+                    <label>Patient Contact Phone Number</label>
+                    <input type="text" id="reportPhone" value="${defaultPhone}" placeholder="03001234567" required style="margin-bottom:12px;">
 
-                    <label>Token Number</label>
-                    <input type="text" id="reportToken" placeholder="Token Number (e.g. 009)" required>
+                    <label>Token Number / Appointment ID (Optional)</label>
+                    <input type="text" id="reportToken" value="${defaultToken || defaultApptId}" placeholder="Token Number (e.g. 001) or ID" style="margin-bottom:12px;">
 
-                    <label>Appointment ID (Optional)</label>
-                    <input type="text" id="reportAppointmentId" placeholder="e.g. MZA-2026-1001">
-
-                    <label>Medical Document</label>
-                    <button type="button" class="chat-option" id="chooseReportFile">
+                    <label>Medical Document (PDF, JPG, JPEG, PNG)</label>
+                    <button type="button" class="chat-option" id="chooseReportFile" style="text-align:center; justify-content:center; margin-bottom:6px;">
                         📎 Choose PDF / JPG / JPEG / PNG
                     </button>
-                    <p id="selectedFileName" style="margin-top:8px;">No file selected</p>
+                    <p id="selectedFileName" style="margin-top:4px; margin-bottom:10px; font-size:13px; font-weight:600; color:${state.report.file ? '#0f766e' : '#64748b'};">${currentFileName}</p>
                 </form>
             `
         );
 
-    const uploadButton = createActionButton("Upload Document Now", submitReportUpload, "primary-action");
+    const categorySelect = document.getElementById("reportCategorySelect");
+    if (categorySelect) {
+        categorySelect.addEventListener("change", (e) => {
+            state.report.type = e.target.value;
+        });
+    }
+
+    const uploadButton = createActionButton("Upload Document Now", () => {
+        if (state.report.file) {
+            uploadSelectedReportFile(state.report.file);
+        } else {
+            medicalFileInput?.click();
+        }
+    }, "primary-action");
+    uploadButton.id = "submitReportUploadButton";
     card.appendChild(uploadButton);
     card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
 
-    document.getElementById("chooseReportFile")?.addEventListener("click", () => {
+    document.getElementById("chooseReportFile")?.addEventListener("click", (e) => {
+        e.preventDefault();
         medicalFileInput.click();
     });
+
+    scrollChatToBottom();
 }
 
 /* =========================================================
-   47. SUBMIT REPORT
+   47. PROCESS & UPLOAD REPORT FILE
 ========================================================= */
 
-async function submitReportUpload() {
-    const phone = document.getElementById("reportPhone")?.value.trim();
-    const token = document.getElementById("reportToken")?.value.trim();
-    const appointmentId = document.getElementById("reportAppointmentId")?.value.trim();
+async function uploadSelectedReportFile(file) {
+    if (isUploading) return;
 
-    if (!phone || !token || !state.report.file) {
-        showToast("Please enter your phone number, token number, and attach a medical document.");
+    if (!file) {
+        showToast("Please select a medical report file (PDF, JPG, JPEG, PNG).");
+        medicalFileInput?.click();
         return;
     }
+
+    // Validate file extension
+    const allowedExts = [".pdf", ".jpg", ".jpeg", ".png"];
+    const fileName = file.name.toLowerCase();
+    const isAllowed = allowedExts.some(ext => fileName.endsWith(ext));
+    if (!isAllowed) {
+        addUserMessage(`📎 ${file.name}`);
+        addBotMessage("❌ Invalid file format. Only PDF, JPG, JPEG, and PNG files are allowed.");
+        showToast("Invalid file format. Only PDF, JPG, JPEG, and PNG files are allowed.");
+        if (medicalFileInput) medicalFileInput.value = "";
+        return;
+    }
+
+    // Validate size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        addUserMessage(`📎 ${file.name}`);
+        addBotMessage("❌ File size exceeds 10MB limit. Please upload a smaller file.");
+        showToast("File size exceeds 10MB limit. Please upload a smaller file.");
+        if (medicalFileInput) medicalFileInput.value = "";
+        return;
+    }
+
+    isUploading = true;
+
+    // 1. Show file in chat UI
+    addUserMessage(`📎 ${file.name}`);
+    addBotMessage(`⏳ Uploading ${file.name}... Please wait.`);
+
+    const phoneInput = document.getElementById("reportPhone");
+    const tokenInput = document.getElementById("reportToken");
+    const categorySelect = document.getElementById("reportCategorySelect");
+
+    const phone = phoneInput ? phoneInput.value.trim() : (state.report.phone || state.booking.phone || "Chat Patient");
+    const token = tokenInput ? tokenInput.value.trim() : (state.report.token || state.booking.token || "");
+    const appointmentId = token || state.booking.appointmentId || "";
+    const reportCategory = categorySelect ? categorySelect.value : (state.report.type || "MRI Scan");
 
     state.report.phone = phone;
     state.report.token = token;
+    state.report.type = reportCategory;
 
-    // Validate file type and size
-    const allowedExts = [".pdf", ".jpg", ".jpeg", ".png"];
-    const fileName = state.report.file.name.toLowerCase();
-    const isAllowed = allowedExts.some(ext => fileName.endsWith(ext));
-    if (!isAllowed) {
-        showToast("Invalid file format. Only PDF, JPG, JPEG, and PNG files are allowed.");
-        return;
-    }
-
-    if (state.report.file.size > 10 * 1024 * 1024) {
-        showToast("File size exceeds 10MB limit. Please upload a smaller file.");
-        return;
+    const submitBtn = document.getElementById("submitReportUploadButton");
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "⏳ Uploading Report...";
+        submitBtn.style.opacity = "0.7";
+        submitBtn.style.cursor = "not-allowed";
     }
 
     const formData = new FormData();
     formData.append("phone", phone);
     formData.append("token", token);
-    formData.append("appointmentId", appointmentId || token);
-    formData.append("reportType", state.report.type || "Other Report");
-    formData.append("reportFile", state.report.file);
+    formData.append("appointmentId", appointmentId);
+    formData.append("reportType", reportCategory);
+    formData.append("patientName", state.booking.patientName || "Patient");
+    formData.append("reportFile", file);
 
     try {
         const response = await fetch("/api/reports", {
@@ -2112,14 +2739,43 @@ async function submitReportUpload() {
             body: formData
         });
         const json = await response.json();
-        if (json.success) {
-            showReportUploadSuccess(json.data);
+        if (json.success && (json.data || json.report)) {
+            const reportInfo = json.data || json.report;
+            addBotMessage("✅ Your medical report has been uploaded successfully.\n\nOur team will review your report and contact you if required.");
+            showReportUploadSuccess(reportInfo);
+            state.report.file = null;
+            if (medicalFileInput) medicalFileInput.value = "";
             showToast("Report Uploaded & Synced with Admin Panel");
         } else {
+            addBotMessage("❌ Unable to upload your report. Please try again.");
             showToast(json.message || "Unable to upload report. Please try again.");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Upload Document Now";
+                submitBtn.style.opacity = "1";
+                submitBtn.style.cursor = "pointer";
+            }
         }
     } catch (e) {
+        console.error("Upload error:", e);
+        addBotMessage("❌ Unable to upload your report. Please try again.");
         showToast("Unable to upload medical report. Please check server connection.");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Upload Document Now";
+            submitBtn.style.opacity = "1";
+            submitBtn.style.cursor = "pointer";
+        }
+    } finally {
+        isUploading = false;
+    }
+}
+
+async function submitReportUpload() {
+    if (state.report.file) {
+        await uploadSelectedReportFile(state.report.file);
+    } else {
+        medicalFileInput?.click();
     }
 }
 
@@ -2130,101 +2786,65 @@ async function submitReportUpload() {
 function showReportUploadSuccess(reportData) {
     clearDynamicContent();
 
-    const tokenText = state.report.token ? `<p><strong>Appointment / Token:</strong> ${state.report.token}</p>` : "";
+    const reportTypeName = (reportData && reportData.reportType) || state.report.type || "Medical Report";
+    const fileName = (reportData && (reportData.originalFileName || reportData.fileName || reportData.storedFileName)) || (state.report.file ? state.report.file.name : "Document");
+    const repId = (reportData && (reportData.reportId || reportData._id)) || "";
 
     const card = createChatCard(
         "✅ Report Uploaded Successfully",
         `
             <p>
-                Your medical report has been securely uploaded and saved.
+                Your medical report has been securely uploaded and saved to Dr. Muhammad Zaheer Anjum's clinic record.
             </p>
             <br>
-            <p><strong>Report Type:</strong> ${state.report.type}</p>
-            <p><strong>File Name:</strong> ${state.report.file.name}</p>
-            ${tokenText}
+            <p><strong>Report ID:</strong> ${repId || 'Generated'}</p>
+            <p><strong>Report Type:</strong> ${reportTypeName}</p>
+            <p><strong>File Name:</strong> ${fileName}</p>
+            <p><strong>Status:</strong> Under Doctor / Staff Review</p>
         `
     );
 
     card.classList.add("success-card");
 
-    card.appendChild(createActionButton("Upload Another Report", startReportUpload));
+    card.appendChild(createActionButton("📎 Upload Another Report", startReportUpload));
     card.appendChild(createActionButton("🏠 Main Menu", showMainMenu));
 
-    showToast("Report Uploaded & Synced with Admin Panel");
+    scrollChatToBottom();
 }
 
 
 /* =========================================================
-   49. FILE UPLOAD
+   49. FILE UPLOAD SETUP
 ========================================================= */
 
 function setupFileUpload() {
 
-    medicalFileInput.addEventListener(
-        "change",
-        () => {
+    if (medicalFileInput && !medicalFileInput.dataset.listenerAttached) {
+        medicalFileInput.dataset.listenerAttached = "true";
 
-            const file =
-                medicalFileInput.files[0];
+        medicalFileInput.addEventListener(
+            "change",
+            () => {
+                const file = medicalFileInput.files[0];
+                if (!file) return;
 
-
-            if (!file) {
-
-                return;
-
+                state.report.file = file;
+                uploadSelectedReportFile(file);
             }
+        );
+    }
 
+    if (attachButton && !attachButton.dataset.listenerAttached) {
+        attachButton.dataset.listenerAttached = "true";
 
-            const maximumSize =
-                10 * 1024 * 1024;
-
-
-            if (
-                file.size >
-                maximumSize
-            ) {
-
-                showToast(
-                    "Maximum file size is 10MB."
-                );
-
-                medicalFileInput.value =
-                    "";
-
-                return;
-
+        attachButton.addEventListener(
+            "click",
+            (e) => {
+                e.preventDefault();
+                startReportUpload();
             }
-
-
-            state.report.file =
-                file;
-
-
-            const label =
-                document.getElementById(
-                    "selectedFileName"
-                );
-
-
-            if (label) {
-
-                label.textContent =
-                    `Selected: ${file.name}`;
-
-            }
-
-        }
-    );
-
-
-    attachButton.addEventListener(
-        "click",
-        () => {
-
-            startReportUpload();
-
-        }
-    );
+        );
+    }
 
 }
 
@@ -2429,6 +3049,9 @@ async function loadInitialChatHistory() {
             renderedMessageIds.clear();
 
             if (Array.isArray(data.messages) && data.messages.length > 0) {
+                if (welcomeCard) welcomeCard.classList.add("hidden");
+                if (mainMenu) mainMenu.classList.remove("hidden");
+
                 const sorted = [...data.messages].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
                 sorted.forEach(msg => renderMessageItem(msg));
                 lastSequence = data.lastSequence || sorted[sorted.length - 1].sequence || 0;
@@ -2504,6 +3127,21 @@ async function handleMessageSubmit(event) {
     if (!messageInput) return;
     const text = messageInput.value.trim();
     if (!text || isSending) return;
+
+    // Check if user is currently searching in Manage Appointment flow
+    if (state.currentFlow === "manageAppointmentSearch" || state.currentStep === "manage-appointment-search") {
+        messageInput.value = "";
+        executeAppointmentSearch(text);
+        return;
+    }
+
+    // Check if user typed 'manage appointment' into chat input
+    const lowerText = text.toLowerCase();
+    if (lowerText === "manage appointment" || lowerText === "manage my appointment" || lowerText === "manage" || lowerText.includes("manage appointment")) {
+        messageInput.value = "";
+        showManageAppointmentSearchStep();
+        return;
+    }
 
     messageInput.value = "";
     await sendPatientMessageToBackend(text);

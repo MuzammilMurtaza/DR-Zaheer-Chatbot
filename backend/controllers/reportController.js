@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Report = require('../models/Report');
 const path = require('path');
 const fs = require('fs');
@@ -14,9 +15,8 @@ const uploadMedicalReport = async (req, res, next) => {
 
         const { phone, appointmentId, token, reportType, description, patientName } = req.body;
 
-        if (!phone || !reportType) {
-            return errorResponse(res, 400, 'Patient phone number and report category are required.');
-        }
+        const resolvedPhone = (phone && phone.trim()) || 'Chat Patient';
+        const resolvedReportType = reportType || 'Medical Report';
 
         let resolvedPatientName = patientName;
         if (!resolvedPatientName || resolvedPatientName === 'Patient') {
@@ -24,7 +24,7 @@ const uploadMedicalReport = async (req, res, next) => {
                 const Appointment = require('../models/Appointment');
                 const matchApp = await Appointment.findOne({
                     $or: [
-                        { phone: phone ? phone.trim() : '' },
+                        { phone: resolvedPhone },
                         { tokenNumber: token ? token.trim() : '' },
                         { appointmentId: appointmentId ? appointmentId.trim() : '' }
                     ]
@@ -39,10 +39,10 @@ const uploadMedicalReport = async (req, res, next) => {
         const reportData = {
             reportId,
             patientName: resolvedPatientName || 'Patient',
-            phone: phone.trim(),
+            phone: resolvedPhone,
             appointmentId: appointmentId || '',
             token: token || '',
-            reportType,
+            reportType: resolvedReportType,
             description: description || '',
             originalFileName: req.file.originalname,
             storedFileName: req.file.filename,
@@ -61,7 +61,22 @@ const uploadMedicalReport = async (req, res, next) => {
             memoryReports.unshift(savedReport);
         }
 
-        return successResponse(res, 201, 'Medical report uploaded successfully', savedReport);
+        return res.status(201).json({
+            success: true,
+            message: 'Report uploaded successfully',
+            data: savedReport,
+            report: {
+                reportId: savedReport.reportId,
+                fileName: savedReport.originalFileName,
+                storedFileName: savedReport.storedFileName,
+                filePath: savedReport.storagePath,
+                uploadDate: savedReport.createdAt,
+                status: savedReport.status,
+                patientName: savedReport.patientName,
+                phone: savedReport.phone,
+                reportType: savedReport.reportType
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -87,15 +102,28 @@ const getReports = async (req, res, next) => {
 const markReportReviewed = async (req, res, next) => {
     try {
         const { id } = req.params;
-        let updated;
+        let updated = null;
 
         try {
-            updated = await Report.findByIdAndUpdate(id, {
-                status: 'reviewed',
-                reviewedAt: new Date(),
-                reviewedBy: req.admin ? req.admin.username : 'Admin'
-            }, { new: true });
+            if (mongoose.Types.ObjectId.isValid(id)) {
+                updated = await Report.findByIdAndUpdate(id, {
+                    status: 'reviewed',
+                    reviewedAt: new Date(),
+                    reviewedBy: req.admin ? req.admin.username : 'Admin'
+                }, { new: true });
+            }
+            if (!updated) {
+                updated = await Report.findOneAndUpdate({ reportId: id }, {
+                    status: 'reviewed',
+                    reviewedAt: new Date(),
+                    reviewedBy: req.admin ? req.admin.username : 'Admin'
+                }, { new: true });
+            }
         } catch (e) {
+            updated = null;
+        }
+
+        if (!updated) {
             const item = memoryReports.find(r => r._id === id || r.reportId === id);
             if (item) {
                 item.status = 'reviewed';
@@ -119,14 +147,20 @@ const markReportReviewed = async (req, res, next) => {
 const downloadReportFile = async (req, res, next) => {
     try {
         const { id } = req.params;
-        let report;
+        let report = null;
 
         try {
-            report = await Report.findById(id);
+            if (mongoose.Types.ObjectId.isValid(id)) {
+                report = await Report.findById(id);
+            }
             if (!report) {
                 report = await Report.findOne({ reportId: id });
             }
         } catch (e) {
+            report = null;
+        }
+
+        if (!report) {
             report = memoryReports.find(r => r._id === id || r.reportId === id);
         }
 
@@ -139,7 +173,7 @@ const downloadReportFile = async (req, res, next) => {
             return errorResponse(res, 404, 'Physical report file not found on server.');
         }
 
-        return res.sendFile(filePath);
+        return res.sendFile(path.resolve(filePath));
     } catch (error) {
         next(error);
     }

@@ -938,12 +938,16 @@ function renderReportsPage() {
                             <th>Appt ID</th>
                             <th>Category</th>
                             <th>File Name</th>
+                            <th>Upload Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${state.reports.length ? state.reports.map(r => `
+                        ${state.reports.length ? state.reports.map(r => {
+                            const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleString() : 'Recent';
+                            const targetId = r._id || r.reportId;
+                            return `
                             <tr>
                                 <td><code>${r.reportId}</code></td>
                                 <td><strong>${r.patientName || 'Patient'}</strong></td>
@@ -952,16 +956,17 @@ function renderReportsPage() {
                                 <td><code>${r.appointmentId || 'N/A'}</code></td>
                                 <td><span class="status-badge reviewed">${r.reportType}</span></td>
                                 <td>${r.originalFileName}</td>
-                                <td><span class="status-badge ${r.status === 'reviewed' ? 'confirmed' : 'pending'}">${r.status.toUpperCase()}</span></td>
+                                <td><small>${dateStr}</small></td>
+                                <td><span class="status-badge ${r.status === 'reviewed' ? 'confirmed' : 'pending'}">${(r.status || 'NEW').toUpperCase()}</span></td>
                                 <td>
                                     <div class="action-btn-group">
-                                        <a href="${API_BASE}/reports/${r._id || r.reportId}/download" target="_blank" class="btn-action blue">View File</a>
-                                        ${r.status === 'new' ? `<button class="btn-action green" onclick="markReportReviewedSubmit('${r._id}')">Mark Reviewed</button>` : ''}
+                                        <a href="${API_BASE}/reports/${targetId}/download" target="_blank" class="btn-action blue">View File</a>
+                                        ${r.status === 'new' ? `<button class="btn-action green" onclick="markReportReviewedSubmit('${targetId}')">Mark Reviewed</button>` : ''}
                                     </div>
                                 </td>
                             </tr>
-                        `).join("") : `
-                            <tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">📄</div><strong>No uploaded reports</strong><p>Uploaded patient scans will appear here immediately.</p></div></td></tr>
+                        `; }).join("") : `
+                            <tr><td colspan="10"><div class="empty-state"><div class="empty-state-icon">📄</div><strong>No uploaded reports</strong><p>Uploaded patient scans will appear here immediately.</p></div></td></tr>
                         `}
                     </tbody>
                 </table>
@@ -971,12 +976,16 @@ function renderReportsPage() {
 }
 
 async function markReportReviewedSubmit(id) {
-    await fetch(`${API_BASE}/reports/${id}/review`, {
-        method: "PATCH",
-        headers: getAuthHeaders()
-    });
-    await fetchReports();
-    renderReportsPage();
+    try {
+        await fetch(`${API_BASE}/reports/${id}/review`, {
+            method: "PATCH",
+            headers: getAuthHeaders()
+        });
+        await fetchReports();
+        renderReportsPage();
+    } catch (e) {
+        console.error("Error marking report reviewed:", e);
+    }
 }
 
 // 12. Virtual Consultation Page

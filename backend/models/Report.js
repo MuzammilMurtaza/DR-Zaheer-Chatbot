@@ -25,7 +25,8 @@ const reportSchema = new mongoose.Schema({
     },
     reportType: {
         type: String,
-        enum: ['MRI Scan', 'X-Ray', 'Prescription', 'Laboratory Report', 'Discharge Summary', 'Other Report'],
+        enum: ['MRI Scan', 'X-Ray', 'Prescription', 'Laboratory Report', 'Discharge Summary', 'Other Report', 'Medical Report'],
+        default: 'Medical Report',
         required: true
     },
     description: {
