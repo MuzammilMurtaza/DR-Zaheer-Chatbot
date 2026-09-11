@@ -1,0 +1,10 @@
+{
+  "name": "dr-zaheer-clinic-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend for Dr. Muhammad Zaheer Anjum Clinic Assistant",
+  "scripts": {
+    "start": "npm start --prefix ../backend",
+    "dev": "npm run dev --prefix ../backend"
+  }
+}
